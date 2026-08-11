@@ -1,0 +1,1341 @@
+{
+ "id": 6792,
+ "accepting_final_offers_end_at": "2026-07-25T01:36:29.343792Z",
+ "accepting_final_offers_start_at": "2026-07-24T01:36:29.343792Z",
+ "accepting_final_offers_initial_offer": 116169,
+ "active_listing_valuation_id": 871083,
+ "asset": {
+  "id": 39967,
+  "mismatch_notice": null,
+  "resale_info": null,
+  "royalty_payors": [
+   {
+    "name": "ascap",
+    "description": "<p><a href=\"https://www.ascap.com/about-us\" target=\"_blank\">American Society of Composers, Authors and Publishers (ASCAP)</a> is one of four United States performing rights organizations, along with BMI, SESAC &amp; Global Music Rights. It collects license fees from music users on behalf of songwriters, composers, and music publishers and distributes them as royalties to those members whose works have been performed.<a href=\"https://www.ascap.com/help/royalties-and-payment/payment/distribution\" target=\"_blank\"> For more information on ASCAP&rsquo;s distribution schedule</a>.</p>",
+    "display_name": "ASCAP",
+    "kind": "pro"
+   }
+  ],
+  "sale_date": "2026-07-24T01:36:29.343792Z",
+  "sale_history": []
+ },
+ "buy_now_price": null,
+ "buy_now_price_history": [
+  {
+   "created_at": "2026-07-13T17:31:09.812304Z",
+   "buy_now_price": "-1"
+  },
+  {
+   "created_at": "2026-07-17T17:01:12.797943Z",
+   "buy_now_price": "-1"
+  },
+  {
+   "created_at": "2026-07-20T23:05:11.000585Z",
+   "buy_now_price": "25000.00"
+  },
+  {
+   "created_at": "2026-07-23T18:14:55.099376Z",
+   "buy_now_price": "21500.00"
+  },
+  {
+   "created_at": "2026-07-24T01:36:29.410550Z",
+   "buy_now_price": "-1"
+  },
+  {
+   "created_at": "2026-07-25T01:36:30.149779Z",
+   "buy_now_price": "-1"
+  }
+ ],
+ "buy_now_price_multiple": null,
+ "buy_now_price_multiple_source": null,
+ "custom_earnings_by_region_chart": "",
+ "default_buy_now_price": 19700,
+ "display_state": {
+  "message": "Pending Sale",
+  "available": true
+ },
+ "earnings_file": null,
+ "expiration": null,
+ "featured_source": null,
+ "generic_financials": null,
+ "hidden": false,
+ "incentive_pool_current_amount": null,
+ "incentive_pool_share_percentage": 0.01,
+ "incentive_pool_size": null,
+ "included_rights": null,
+ "is_eligible_to_withdraw_offers_placed_before_update": false,
+ "is_featured": false,
+ "is_in_feature_queue": false,
+ "is_owner": false,
+ "is_track_list_hidden": false,
+ "kind": "direct_listing",
+ "last_websocket_message_published_at": "2026-07-31T20:27:20.366594Z",
+ "marketplace_median": "16348.61",
+ "marketplace_median_multiplier": "5.639",
+ "marketplace_median_source": "ltm",
+ "media_urls": [
+  "https://youtu.be/1C4Oorxeau8?si=LpVGYtk5JIAXTdOp",
+  "https://youtu.be/vpi5Bdq8-U0?si=hHmluPYdoavKIAb5",
+  "https://youtu.be/dH-gLjsEMF8?si=2-S6iCNVKv2ylj04"
+ ],
+ "minimum_price": "3050.00",
+ "offers": [
+  {
+   "id": 116169,
+   "amount": "19900.00",
+   "buyer_id": 127482,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-21T07:58:45.688524Z",
+   "expiration": null,
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "6.86",
+   "multiple_source": "ltm",
+   "state": "awaiting_transfer",
+   "term": "30_year",
+   "bidder_index": 7
+  },
+  {
+   "id": 116162,
+   "amount": "19700.00",
+   "buyer_id": 35826,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-20T23:06:29.601904Z",
+   "expiration": "2026-07-23T23:06:29.589453Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "6.80",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 9
+  },
+  {
+   "id": 116131,
+   "amount": "19500.00",
+   "buyer_id": 157028,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-19T15:02:13.393610Z",
+   "expiration": "2026-07-22T15:02:13.381674Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "6.73",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 5
+  },
+  {
+   "id": 116120,
+   "amount": "19300.00",
+   "buyer_id": 127482,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-19T06:22:44.196959Z",
+   "expiration": "2026-07-22T06:22:44.184969Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "6.66",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 7
+  },
+  {
+   "id": 116118,
+   "amount": "19100.00",
+   "buyer_id": 157028,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-19T04:44:18.191366Z",
+   "expiration": "2026-07-22T04:44:18.179081Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "6.59",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 5
+  },
+  {
+   "id": 116117,
+   "amount": "18900.00",
+   "buyer_id": 72776,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-19T04:40:14.381541Z",
+   "expiration": "2026-07-22T04:40:14.368534Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "6.52",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 12
+  },
+  {
+   "id": 116116,
+   "amount": "18888.00",
+   "buyer_id": 157028,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-19T04:40:14.330625Z",
+   "expiration": "2026-07-22T04:40:14.317300Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "6.52",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 5
+  },
+  {
+   "id": 116115,
+   "amount": "18600.00",
+   "buyer_id": 72776,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T23:42:50.548262Z",
+   "expiration": "2026-07-21T23:42:50.508082Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "6.42",
+   "multiple_source": "ltm",
+   "state": "fail_offer_increased",
+   "term": "30_year",
+   "bidder_index": 12
+  },
+  {
+   "id": 116114,
+   "amount": "18200.00",
+   "buyer_id": 141513,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T21:09:50.137111Z",
+   "expiration": "2026-07-21T21:09:50.125365Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "6.28",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 13
+  },
+  {
+   "id": 116112,
+   "amount": "18000.00",
+   "buyer_id": 157028,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T20:43:12.923195Z",
+   "expiration": "2026-07-21T20:43:12.910163Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "6.21",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 5
+  },
+  {
+   "id": 116111,
+   "amount": "17300.00",
+   "buyer_id": 141513,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T20:16:03.828325Z",
+   "expiration": "2026-07-21T20:16:03.788141Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.97",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 13
+  },
+  {
+   "id": 116110,
+   "amount": "17000.00",
+   "buyer_id": 39251,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T20:12:11.844428Z",
+   "expiration": "2026-07-21T20:12:11.804265Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.86",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 10
+  },
+  {
+   "id": 116109,
+   "amount": "16800.00",
+   "buyer_id": 127482,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T20:03:42.546871Z",
+   "expiration": "2026-07-21T20:03:42.534884Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.79",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 7
+  },
+  {
+   "id": 116107,
+   "amount": "16555.00",
+   "buyer_id": 157028,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T18:38:00.586457Z",
+   "expiration": "2026-07-21T18:38:00.574011Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.71",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 5
+  },
+  {
+   "id": 116106,
+   "amount": "16000.00",
+   "buyer_id": 72776,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T17:27:38.525616Z",
+   "expiration": "2026-07-21T17:27:38.513620Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.52",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 12
+  },
+  {
+   "id": 116105,
+   "amount": "16000.00",
+   "buyer_id": 29873,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T17:27:38.477356Z",
+   "expiration": "2026-07-21T17:27:38.464567Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.52",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 1
+  },
+  {
+   "id": 116104,
+   "amount": "15800.00",
+   "buyer_id": 72776,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T17:27:03.684680Z",
+   "expiration": "2026-07-21T17:27:03.672811Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.45",
+   "multiple_source": "ltm",
+   "state": "fail_offer_increased",
+   "term": "30_year",
+   "bidder_index": 12
+  },
+  {
+   "id": 116103,
+   "amount": "15600.00",
+   "buyer_id": 35826,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T17:27:03.636969Z",
+   "expiration": "2026-07-21T17:27:03.624745Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.38",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 9
+  },
+  {
+   "id": 116102,
+   "amount": "15400.00",
+   "buyer_id": 72776,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T17:26:33.949345Z",
+   "expiration": "2026-07-21T17:26:33.935889Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.31",
+   "multiple_source": "ltm",
+   "state": "fail_offer_increased",
+   "term": "30_year",
+   "bidder_index": 12
+  },
+  {
+   "id": 116101,
+   "amount": "15200.00",
+   "buyer_id": 29873,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T17:26:33.891118Z",
+   "expiration": "2026-07-21T17:26:33.879737Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.24",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 1
+  },
+  {
+   "id": 116100,
+   "amount": "15000.00",
+   "buyer_id": 72776,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T16:34:53.635348Z",
+   "expiration": "2026-07-21T16:34:53.620033Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.17",
+   "multiple_source": "ltm",
+   "state": "fail_offer_increased",
+   "term": "30_year",
+   "bidder_index": 12
+  },
+  {
+   "id": 116097,
+   "amount": "14800.00",
+   "buyer_id": 29873,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T15:52:23.377955Z",
+   "expiration": "2026-07-21T15:52:23.366230Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.11",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 1
+  },
+  {
+   "id": 116096,
+   "amount": "14600.00",
+   "buyer_id": 39849,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T15:45:15.892417Z",
+   "expiration": "2026-07-21T15:45:15.879677Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "5.04",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 11
+  },
+  {
+   "id": 116092,
+   "amount": "14400.00",
+   "buyer_id": 157028,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T15:06:44.268421Z",
+   "expiration": "2026-07-21T15:06:44.251003Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.97",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 5
+  },
+  {
+   "id": 116091,
+   "amount": "14200.00",
+   "buyer_id": 39251,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T14:59:45.261792Z",
+   "expiration": "2026-07-21T14:59:45.232070Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.90",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 10
+  },
+  {
+   "id": 116090,
+   "amount": "14000.00",
+   "buyer_id": 127482,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T14:44:43.028547Z",
+   "expiration": "2026-07-21T14:44:43.013630Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.83",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 7
+  },
+  {
+   "id": 116088,
+   "amount": "13750.00",
+   "buyer_id": 35826,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T12:51:02.758561Z",
+   "expiration": "2026-07-21T12:51:02.746203Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.74",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 9
+  },
+  {
+   "id": 116087,
+   "amount": "13550.00",
+   "buyer_id": 23961,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T12:08:40.745152Z",
+   "expiration": "2026-07-21T12:08:40.716133Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.67",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 8
+  },
+  {
+   "id": 116078,
+   "amount": "13350.00",
+   "buyer_id": 127482,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T08:07:43.800524Z",
+   "expiration": "2026-07-21T08:07:43.787573Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.60",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 7
+  },
+  {
+   "id": 116075,
+   "amount": "13150.00",
+   "buyer_id": 43934,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T04:37:22.610148Z",
+   "expiration": "2026-07-21T04:37:22.598570Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.54",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 6
+  },
+  {
+   "id": 116073,
+   "amount": "12950.00",
+   "buyer_id": 157028,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-18T00:59:04.980330Z",
+   "expiration": "2026-07-21T00:59:04.944112Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.47",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 5
+  },
+  {
+   "id": 116071,
+   "amount": "12750.00",
+   "buyer_id": 29873,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-17T23:51:47.748166Z",
+   "expiration": "2026-07-20T23:51:47.736782Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.40",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 1
+  },
+  {
+   "id": 116069,
+   "amount": "12400.00",
+   "buyer_id": 154698,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-17T23:26:53.785389Z",
+   "expiration": "2026-07-20T23:26:53.772556Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.28",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 2
+  },
+  {
+   "id": 116068,
+   "amount": "12200.00",
+   "buyer_id": 77446,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-17T22:56:41.892982Z",
+   "expiration": "2026-07-20T22:56:41.881216Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.21",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 4
+  },
+  {
+   "id": 116066,
+   "amount": "12000.00",
+   "buyer_id": 8523,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-17T22:25:34.533121Z",
+   "expiration": "2026-07-20T22:25:34.520438Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "4.14",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 3
+  },
+  {
+   "id": 116063,
+   "amount": "11200.00",
+   "buyer_id": 29873,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-17T21:29:23.412931Z",
+   "expiration": "2026-07-20T21:29:23.400605Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "3.86",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 1
+  },
+  {
+   "id": 116062,
+   "amount": "10800.00",
+   "buyer_id": 154698,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-17T21:27:25.106373Z",
+   "expiration": "2026-07-20T21:27:25.094597Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "3.73",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 2
+  },
+  {
+   "id": 116056,
+   "amount": "10000.00",
+   "buyer_id": 29873,
+   "countered_offer_id": null,
+   "counteroffer_id": null,
+   "created_at": "2026-07-17T17:08:20.512157Z",
+   "expiration": "2026-07-20T17:08:20.500779Z",
+   "incentive_pool_qualifying": false,
+   "kind": "bid_offer",
+   "multiple": "3.45",
+   "multiple_source": "ltm",
+   "state": "fail_offer_outbid",
+   "term": "30_year",
+   "bidder_index": 1
+  }
+ ],
+ "deal": {
+  "id": 116169,
+  "amount": "19900.00",
+  "buyer_id": 127482,
+  "countered_offer_id": null,
+  "counteroffer_id": null,
+  "created_at": "2026-07-21T07:58:45.688524Z",
+  "expiration": null,
+  "incentive_pool_qualifying": false,
+  "kind": "bid_offer",
+  "multiple": "6.86",
+  "multiple_source": "ltm",
+  "state": "awaiting_transfer",
+  "term": "30_year"
+ },
+ "offers_awaiting_acceptance": false,
+ "offers_received_count": 38,
+ "other_info": null,
+ "owner_last_active_date": "2026-07-24T01:36:29.453539Z",
+ "performing_artist_analysis": "<p>&quot;Front Door Famous&quot; opens Luke Combs&#39; fifth studio album, <em>Fathers &amp; Sons</em>, which debuted at No. 6 on the Billboard 200 in June 2024. Combs is one of the defining artists of modern country: a Grand Ole Opry member with a long run of No. 1 country-radio singles and a diamond-certified hit in &quot;Beautiful Crazy,&quot; and a repeat CMA, ACM, and Billboard Music Award winner.<br /><br />&quot;I Hate Alabama&quot; was Conner Smith&#39;s debut single and his breakout. It went viral on TikTok and reached No. 21 on Billboard&#39;s Country Digital Song Sales chart in late 2021, surging when Georgia beat Alabama for the national championship that January &mdash; success that earned Smith his Big Machine/Valory deal and Billboard&#39;s Country Rookie of the Month. He has since reached the Hot 100 and topped the UK Country Airplay chart with &quot;Creek Will Rise.&quot;<br /><br />&quot;Get Up and Get It&quot; comes from Drew Green, a Sony Music Nashville singer-songwriter who first broke in as a writer. &quot;Throwin&#39; Parties&quot; is the catalog&#39;s longest-tenured song and its most telling credit. It&#39;s recorded by Hunter Phelps, one of Nashville&#39;s premier hit songwriters &mdash; a Warner Chappell/Tape Room writer behind a string of No. 1 country singles including HARDY and Lainey Wilson&#39;s &quot;wait in the truck,&quot; HARDY&#39;s &quot;TRUCK BED,&quot; and Chris Lane&#39;s &quot;I Don&#39;t Know About You,&quot; plus a CMA Triple Play Award. Phelps also co-wrote two other songs in this catalog, a reminder that these cuts come from the same tight circle of Nashville writers.</p>",
+ "proxy_increment_amount": "200.00",
+ "published_date": "2026-07-17T17:01:12.707003Z",
+ "requested_buy_now_price": null,
+ "seller_id": 154080,
+ "state": "pending",
+ "tags": [
+  "ASCAP",
+  "Luke Combs",
+  "Drew Green",
+  "Conner Smith",
+  "Hunter Phelps",
+  "Jon Langston"
+ ],
+ "term": "30_year",
+ "term_expiration": "2056-07-24T01:36:29.343792Z",
+ "term_return_amount": null,
+ "thumbnail_large": null,
+ "title": "Luke Combs, Drew Green + More Songwriter Royalties",
+ "track_count": 6,
+ "unique_bidder_count": 13,
+ "valuation": {
+  "id": 871083,
+  "distribution_frequency": 4,
+  "dollar_age": 3.77,
+  "earnings_by_region": [
+   [
+    "2019-10-01",
+    {
+     "domestic": 0.0,
+     "intl": 0.01,
+     "unreported": 0.0,
+     "total": 0.01
+    }
+   ],
+   [
+    "2020-01-01",
+    {
+     "domestic": 267.01018,
+     "intl": 0.0,
+     "unreported": 0.0,
+     "total": 267.01018
+    }
+   ],
+   [
+    "2020-04-01",
+    {
+     "domestic": 133.33326,
+     "intl": 0.692,
+     "unreported": 0.0,
+     "total": 134.02526
+    }
+   ],
+   [
+    "2020-07-01",
+    {
+     "domestic": 230.54531,
+     "intl": 1.098,
+     "unreported": 0.0,
+     "total": 231.64331
+    }
+   ],
+   [
+    "2020-10-01",
+    {
+     "domestic": 234.03664,
+     "intl": 16.288,
+     "unreported": 0.0,
+     "total": 250.32464
+    }
+   ],
+   [
+    "2021-01-01",
+    {
+     "domestic": 221.18116,
+     "intl": 0.588,
+     "unreported": 0.0,
+     "total": 221.76916
+    }
+   ],
+   [
+    "2021-04-01",
+    {
+     "domestic": 185.33775,
+     "intl": 1.14,
+     "unreported": 0.0,
+     "total": 186.47775
+    }
+   ],
+   [
+    "2021-07-01",
+    {
+     "domestic": 172.62842,
+     "intl": 33.175,
+     "unreported": 0.0,
+     "total": 205.80342
+    }
+   ],
+   [
+    "2021-10-01",
+    {
+     "domestic": 194.68144,
+     "intl": 13.112,
+     "unreported": 0.0,
+     "total": 207.79344
+    }
+   ],
+   [
+    "2022-01-01",
+    {
+     "domestic": 170.09516,
+     "intl": 14.295,
+     "unreported": 0.0,
+     "total": 184.39016
+    }
+   ],
+   [
+    "2022-04-01",
+    {
+     "domestic": 624.88306,
+     "intl": 18.388,
+     "unreported": 0.0,
+     "total": 643.27106
+    }
+   ],
+   [
+    "2022-07-01",
+    {
+     "domestic": 662.84426,
+     "intl": 4.675,
+     "unreported": 0.0,
+     "total": 667.51926
+    }
+   ],
+   [
+    "2022-10-01",
+    {
+     "domestic": 650.06342,
+     "intl": 3.294,
+     "unreported": 0.0,
+     "total": 653.35742
+    }
+   ],
+   [
+    "2023-01-01",
+    {
+     "domestic": 343.05288,
+     "intl": 21.511,
+     "unreported": 0.0,
+     "total": 364.56388
+    }
+   ],
+   [
+    "2023-04-01",
+    {
+     "domestic": 486.61963,
+     "intl": 7.317,
+     "unreported": 0.0,
+     "total": 493.93663
+    }
+   ],
+   [
+    "2023-07-01",
+    {
+     "domestic": 482.3518,
+     "intl": 23.173,
+     "unreported": 0.0,
+     "total": 505.5248
+    }
+   ],
+   [
+    "2023-10-01",
+    {
+     "domestic": 611.41886,
+     "intl": 122.842,
+     "unreported": 0.0,
+     "total": 734.26086
+    }
+   ],
+   [
+    "2024-01-01",
+    {
+     "domestic": 416.69498,
+     "intl": 46.585,
+     "unreported": 0.0,
+     "total": 463.27998
+    }
+   ],
+   [
+    "2024-04-01",
+    {
+     "domestic": 421.66706,
+     "intl": 41.987,
+     "unreported": 0.0,
+     "total": 463.65406
+    }
+   ],
+   [
+    "2024-07-01",
+    {
+     "domestic": 460.99332,
+     "intl": 46.765,
+     "unreported": 0.0,
+     "total": 507.75832
+    }
+   ],
+   [
+    "2024-10-01",
+    {
+     "domestic": 1276.16244,
+     "intl": 48.7,
+     "unreported": 0.0,
+     "total": 1324.86244
+    }
+   ],
+   [
+    "2025-01-01",
+    {
+     "domestic": 748.4817,
+     "intl": 37.521,
+     "unreported": 0.0,
+     "total": 786.0027
+    }
+   ],
+   [
+    "2025-04-01",
+    {
+     "domestic": 792.59702,
+     "intl": 37.873,
+     "unreported": 0.0,
+     "total": 830.47002
+    }
+   ],
+   [
+    "2025-07-01",
+    {
+     "domestic": 719.83736,
+     "intl": 31.569,
+     "unreported": 0.0,
+     "total": 751.40636
+    }
+   ],
+   [
+    "2025-10-01",
+    {
+     "domestic": 1049.47856,
+     "intl": 31.692,
+     "unreported": 0.0,
+     "total": 1081.17056
+    }
+   ],
+   [
+    "2026-01-01",
+    {
+     "domestic": 358.57176,
+     "intl": 34.671,
+     "unreported": 0.0,
+     "total": 393.24276
+    }
+   ],
+   [
+    "2026-04-01",
+    {
+     "domestic": 642.03344,
+     "intl": 31.222,
+     "unreported": 0.0,
+     "total": 673.25544
+    }
+   ]
+  ],
+  "first_earnings_date": "2019-10-01T06:00:00Z",
+  "lifetime_amount": 13226.78,
+  "ltm": 2899.08,
+  "regions": [
+   "all"
+  ],
+  "statistics_last_updated": "2026-07-20T10:25:45.126934Z",
+  "three_years_average": 2838.3,
+  "top_earnings_by_year": {
+   "top_songs": [
+    {
+     "year": "year_1",
+     "THROWIN' PARTIES": 800.74,
+     "I HATE ALABAMA": 423.24,
+     "GET UP AND GET IT": 17.28
+    },
+    {
+     "year": "year_2",
+     "I HATE ALABAMA": 1278.48,
+     "THROWIN' PARTIES": 677.36,
+     "GET UP AND GET IT": 223.54
+    },
+    {
+     "year": "year_3",
+     "I HATE ALABAMA": 888.51,
+     "THROWIN' PARTIES": 600.87,
+     "GET UP AND GET IT": 526.95,
+     "HEART ON ICE": 150.39
+    },
+    {
+     "year": "year_4",
+     "FRONT DOOR FAMOUS": 1535.84,
+     "GET UP AND GET IT": 694.93,
+     "I HATE ALABAMA": 632.77,
+     "THROWIN' PARTIES": 319.47,
+     "HEART ON ICE": 266.08
+    },
+    {
+     "year": "year_5",
+     "FRONT DOOR FAMOUS": 1151.24,
+     "GET UP AND GET IT": 907.4,
+     "I HATE ALABAMA": 574.05,
+     "THROWIN' PARTIES": 199.08,
+     "HEART ON ICE": 67.3
+    }
+   ],
+   "top_income_types": [
+    {
+     "year": "year_1",
+     "PERFORMANCE": 1241.25808
+    },
+    {
+     "year": "year_2",
+     "PERFORMANCE": 2179.37719
+    },
+    {
+     "year": "year_3",
+     "PERFORMANCE": 2166.7197
+    },
+    {
+     "year": "year_4",
+     "PERFORMANCE": 3449.09348
+    },
+    {
+     "year": "year_5",
+     "PERFORMANCE": 2899.07512
+    }
+   ],
+   "top_sources": [
+    {
+     "year": "year_1",
+     "STREAMING": 1136.02858,
+     "RADIO": 34.32104,
+     "RETAIL MUSIC SERVICE": 6.98474,
+     "OTHER": 63.92372
+    },
+    {
+     "year": "year_2",
+     "STREAMING": 1923.19997,
+     "RADIO": 84.4078,
+     "RETAIL MUSIC SERVICE": 9.42498,
+     "OTHER": 162.34444
+    },
+    {
+     "year": "year_3",
+     "STREAMING": 1906.86542,
+     "LIVE": 39.6959,
+     "RADIO": 35.70432,
+     "RETAIL MUSIC SERVICE": 11.68816,
+     "OTHER": 172.7659
+    },
+    {
+     "year": "year_4",
+     "STREAMING": 3287.65654,
+     "RADIO": 9.85896,
+     "RETAIL MUSIC SERVICE": 6.33694,
+     "SATELLITE RADIO": 1.96716,
+     "LIVE": 0.101,
+     "OTHER": 143.17288
+    },
+    {
+     "year": "year_5",
+     "STREAMING": 2620.90054,
+     "LIVE": 115.1761,
+     "RADIO": 8.71016,
+     "RETAIL MUSIC SERVICE": 5.93332,
+     "SATELLITE RADIO": 1.15664,
+     "OTHER": 147.19836
+    }
+   ],
+   "top_music_users": [
+    {
+     "year": "year_1",
+     "SPOTIFY": 493.88656,
+     "APPLE MUSIC": 417.71774,
+     "PANDORA": 89.74402,
+     "YOUTUBE": 50.00848,
+     "AMAZON": 6.50045,
+     "OTHER": 183.40083
+    },
+    {
+     "year": "year_2",
+     "SPOTIFY": 959.72492,
+     "APPLE MUSIC": 642.12918,
+     "PANDORA": 160.9165,
+     "AMAZON": 43.6315,
+     "YOUTUBE": 38.63028,
+     "OTHER": 334.34481
+    },
+    {
+     "year": "year_3",
+     "SPOTIFY": 748.72752,
+     "APPLE MUSIC": 517.92944,
+     "PANDORA": 147.56442,
+     "YOUTUBE": 56.49806,
+     "AMAZON": 55.14804,
+     "OTHER": 640.85222
+    },
+    {
+     "year": "year_4",
+     "APPLE MUSIC": 971.12628,
+     "SPOTIFY": 898.16088,
+     "YOUTUBE": 383.0311,
+     "AMAZON": 376.51562,
+     "PANDORA": 273.86892,
+     "OTHER": 546.39068
+    },
+    {
+     "year": "year_5",
+     "APPLE MUSIC": 685.18108,
+     "SPOTIFY": 670.15266,
+     "PANDORA": 564.90552,
+     "YOUTUBE": 198.28704,
+     "AMAZON": 188.28288,
+     "OTHER": 592.26594
+    }
+   ],
+   "top_royalty_payors": null
+  },
+  "top_income_types": [
+   {
+    "name": "PERFORMANCE",
+    "earnings": 2899.08,
+    "track_count": 5
+   }
+  ],
+  "top_music_users": [
+   {
+    "name": "APPLE MUSIC",
+    "earnings": 685.18,
+    "track_count": null
+   },
+   {
+    "name": "SPOTIFY",
+    "earnings": 670.15,
+    "track_count": null
+   },
+   {
+    "name": "PANDORA",
+    "earnings": 564.91,
+    "track_count": null
+   },
+   {
+    "name": "YOUTUBE",
+    "earnings": 198.29,
+    "track_count": null
+   },
+   {
+    "name": "AMAZON",
+    "earnings": 188.28,
+    "track_count": null
+   },
+   {
+    "name": "OTHER",
+    "earnings": 592.27,
+    "track_count": null
+   }
+  ],
+  "top_songs": [
+   {
+    "name": "FRONT DOOR FAMOUS",
+    "earnings": 1151.24
+   },
+   {
+    "name": "GET UP AND GET IT",
+    "earnings": 907.4
+   },
+   {
+    "name": "I HATE ALABAMA",
+    "earnings": 574.05
+   },
+   {
+    "name": "THROWIN' PARTIES",
+    "earnings": 199.08
+   },
+   {
+    "name": "HEART ON ICE",
+    "earnings": 67.3
+   },
+   {
+    "name": "OTHER",
+    "earnings": 0.0
+   }
+  ],
+  "top_sources": [
+   {
+    "name": "STREAMING",
+    "earnings": 2620.9,
+    "track_count": 5,
+    "earning_details": []
+   },
+   {
+    "name": "LIVE",
+    "earnings": 115.18,
+    "track_count": 2,
+    "earning_details": []
+   },
+   {
+    "name": "RADIO",
+    "earnings": 8.71,
+    "track_count": 4,
+    "earning_details": []
+   },
+   {
+    "name": "RETAIL MUSIC SERVICE",
+    "earnings": 5.93,
+    "track_count": 5,
+    "earning_details": []
+   },
+   {
+    "name": "SATELLITE RADIO",
+    "earnings": 1.16,
+    "track_count": 3,
+    "earning_details": []
+   },
+   {
+    "name": "OTHER",
+    "earnings": 147.2,
+    "track_count": 9,
+    "earning_details": []
+   }
+  ],
+  "track_list": [
+   {
+    "parent_id": "",
+    "id": "924067202",
+    "title": "FRONT DOOR FAMOUS"
+   },
+   {
+    "parent_id": "",
+    "id": "907629377",
+    "title": "GET UP AND GET IT"
+   },
+   {
+    "parent_id": "907629377",
+    "id": "920237896",
+    "title": "GET UP AND GET IT"
+   },
+   {
+    "parent_id": "907629377",
+    "id": "927484465",
+    "title": "GET UP AND GET IT"
+   },
+   {
+    "parent_id": "907629377",
+    "id": "932358542",
+    "title": "GET UP AND GET IT"
+   },
+   {
+    "parent_id": "",
+    "id": "916906769",
+    "title": "HEART ON ICE"
+   },
+   {
+    "parent_id": "916906769",
+    "id": "933264067",
+    "title": "HEART ON ICE"
+   },
+   {
+    "parent_id": "",
+    "id": "911441875",
+    "title": "I HATE ALABAMA"
+   },
+   {
+    "parent_id": "",
+    "id": "",
+    "title": "THROWIN PARTIES"
+   },
+   {
+    "parent_id": "",
+    "id": "896960126",
+    "title": "THROWIN' PARTIES"
+   },
+   {
+    "parent_id": "896960126",
+    "id": "897657989",
+    "title": "THROWING PARTIES"
+   }
+  ]
+ },
+ "valuation_description": {
+  "id": 7250,
+  "contents": [
+   {
+    "id": 27424,
+    "body": "<p>This catalog is built from a run of major-artist country cuts &mdash; five songs by five charting artists: Luke Combs, Conner Smith, Drew Green, Jon Langston, and Hunter Phelps. The anchor, &quot;Front Door Famous,&quot; recorded by Luke Combs on his 2024 album Fathers &amp; Sons, roughly doubled its writing income from the first year to the second.&nbsp;<br /><br />most modern country, it earns primarily through streaming, about 90% of income. What sets it apart is the balance. That streaming is spread evenly across platforms rather than riding on one. Apple Music, Spotify, and Pandora each take roughly a fifth to a quarter, with YouTube and Amazon behind them. No single service carries the catalog.<br /><br />last twelve months earned about $2,899 &mdash; within 2% of the three-year average of $2,838, and slightly above it. Even though the trailing year is down about 16% from the one before, that prior year was a peak lifted by the Combs cut&#39;s first-year streaming burst; the pullback simply returns earnings to their baseline.<br /><br />an investor, this is a focused bet on recent, streaming-era country songwriting: broad platform income from multiple charting artists, already settled at its floor rather than still cooling from a spike.</p>",
+    "kind": "overview"
+   },
+   {
+    "id": 27425,
+    "body": "<p>Front Door Famous &mdash; 2024<br />catalog&#39;s largest earner at roughly 40% of recent income, recorded by Luke Combs, with writing royalties that roughly doubled from its first full year to its second.<br /><br />Up and Get It &mdash; 2021<br />31% of recent income and one of the steadiest quarter-to-quarter earners in the catalog, recorded by Drew Green.<br /><br />Hate Alabama &mdash; 2021<br />20% of recent income, recorded by Conner Smith, and the one top track that posted its strongest quarter in the most recent period and has maintained a positive CAGR of 7.92%.</p>",
+    "kind": "song_analysis"
+   },
+   {
+    "id": 27426,
+    "body": "",
+    "kind": "income_type_analysis"
+   },
+   {
+    "id": 27427,
+    "body": "<p>Streaming has been the dominant revenue source, contributing between 88.01% and 95.32% of total earnings annually.</p>",
+    "kind": "source_analysis"
+   },
+   {
+    "id": 27428,
+    "body": "<p>Apple Music (about 24% of LTM)<br />single largest platform, reflecting Apple&#39;s higher per-play performance rates and no free tier.<br /><br />(about 23% of LTM)<br />level with Apple and the largest by raw listenership, a core and stable channel.<br /><br />(about 20% of LTM)<br />unusually prominent share, a good sign for country writing income given Pandora&#39;s radio-style listening and its strength with U.S. country audiences.<br />&nbsp;</p>",
+    "kind": "music_user_analysis"
+   },
+   {
+    "id": 27429,
+    "body": "",
+    "kind": "performing_artist_analysis"
+   }
+  ],
+  "has_failed": false,
+  "prompt_hash": null,
+  "prompt_id": "valuation_description_7250",
+  "prompt_version": 9,
+  "valuation_id": 870429
+ }
+}

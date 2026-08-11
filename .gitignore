@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.ipynb_checkpoints/
+.DS_Store
+
+# data artifacts: rebuildable or large, never committed
+*.duckdb
+*.duckdb.wal
+landing/
+data/
+!fixtures/
+.pytest_cache/
