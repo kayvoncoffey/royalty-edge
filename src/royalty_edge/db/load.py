@@ -113,7 +113,7 @@ def insert_listing_observation(con, obs: ListingObservation, *, fetch_id: int) -
 # --------------------------------------------------------------------
 
 def rebuild_analytic(con, *, all_access: bool = False) -> None:
-    for t in ("dim_listing", "fact_outcome", "fact_earnings_panel",
+    for t in ("dim_listing", "dim_asset", "fact_outcome", "fact_earnings_panel",
               "fact_source_mix", "fact_offer", "data_quality_flag"):
         con.execute(f"DELETE FROM {t}")
 
