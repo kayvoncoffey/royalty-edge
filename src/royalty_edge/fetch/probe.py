@@ -31,10 +31,13 @@ INDEX_URL = f"{BASE}/inventory/listings/"
 # Ranked guesses. The index lives at /inventory/listings/, so a DRF detail
 # route at the same collection is by far the most likely.
 DETAIL_URL_CANDIDATES = [
-    f"{BASE}/inventory/listings/{{id}}/",
-    f"{BASE}/orderbook/api/listings/{{id}}/",
-    f"{BASE}/inventory/listing/{{id}}/",
-    f"{BASE}/orderbook/api/listing-detail/{{id}}/",
+    # Confirmed 2026-08-11: bare /orderbook/api/listings/{id}/ returns a shallow
+    # stub. The include[] params expand the nested objects the parser needs.
+    BASE + "/orderbook/api/listings/{id}/?include[]=asset.*&include[]=deal.*"
+          "&include[]=valuation_description.*&include[]=offers.*",
+    BASE + "/inventory/listings/{id}/",
+    BASE + "/inventory/listing/{id}/",
+    BASE + "/orderbook/api/listing-detail/{id}/",
 ]
 
 INDEX_FILTER_PARAMS = [

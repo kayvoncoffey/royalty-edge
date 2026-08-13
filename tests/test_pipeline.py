@@ -18,7 +18,9 @@ from royalty_edge.fetch.harvest import harvest, pending_count
 from royalty_edge.fetch.probe import probe_detail_url, probe_page_size
 
 FIX = Path(__file__).resolve().parents[1] / "fixtures"
-DETAIL_TMPL = "https://example.test/inventory/listings/{id}/"
+DETAIL_TMPL = ("https://example.test/orderbook/api/listings/{id}/"
+               "?include[]=asset.*&include[]=deal.*"
+               "&include[]=valuation_description.*&include[]=offers.*")
 
 
 class FakeFetcher:
@@ -53,7 +55,7 @@ class FakeFetcher:
         n = len(self.calls)
         if self.auth_fail_after and n > self.auth_fail_after:
             return self._store(url, b"<!DOCTYPE html><html>login</html>", 200)
-        if "/listings/" in url and url.rstrip("/").split("/")[-1].isdigit():
+        if "/listings/" in url and url.rstrip("/").split("?")[0].rstrip("/").split("/")[-1].isdigit():
             if not self.detail_ok:
                 return self._store(url, b'{"detail":"Not found."}', 404)
             return self._store(url, self._detail)

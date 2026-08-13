@@ -238,7 +238,8 @@ def main(argv=None) -> int:
     sp.set_defaults(func=cmd_probe)
 
     sd = sub.add_parser("discover", help="walk the index, queue detail fetches")
-    sd.add_argument("--page-size", type=int, default=None)
+    sd.add_argument("--page-size", type=int, default=500,
+                    help="listings per index request (default 500; server accepts up to 500)")
     sd.add_argument("--max-pages", type=int, default=None)
     sd.add_argument("--detail-url-template", default=None)
     sd.set_defaults(func=cmd_discover)
