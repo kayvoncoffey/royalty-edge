@@ -28,6 +28,9 @@ from .fetch.discover import discover, queue_details_from_index
 from .fetch.harvest import failure_report, harvest, pending_count, queue_report
 from .fetch.probe import run_probe
 from .fetch.session import build_session, load_cookie
+from .model.features import FrameSpec, load_frame, FUNDAMENTALS, SELLER_ASK, ANCHOR
+from .model.pricing import (anchor_analysis, fit_ladder, ladder_table,
+                            residual_screen, spike_check, temporal_holdout)
 
 DEFAULT_DB = "data/royalty_edge.duckdb"
 DEFAULT_LANDING = "landing"
@@ -220,6 +223,67 @@ def cmd_report(args) -> int:
         con.close()
 
 
+
+def cmd_pricing(args) -> int:
+    """Phase 2: fit the clearing-multiple model and report what the market prices."""
+    import pandas as pd
+    pd.set_option("display.width", 200)
+    pd.set_option("display.max_columns", 50)
+
+    con = connect(args.db, read_only=True)
+    try:
+        spec = FrameSpec(min_deal_year=args.min_year,
+                         include_legacy_auctions=args.include_legacy)
+        df, attrition = load_frame(con, spec)
+        print(f"=== sample: {spec.describe()} ===")
+        print(attrition.to_string(index=False))
+        if len(df) < 100:
+            print(f"\nonly {len(df)} rows survive; loosen the spec before fitting")
+            return 1
+
+        print(f"\n=== model ladder (n={len(df)}) ===")
+        results = fit_ladder(df)
+        print(ladder_table(results).to_string(index=False))
+
+        print("\n=== M3 coefficients (the pre-bid model) ===")
+        print(results[3].params.to_string())
+
+        print("\n=== temporal holdout ===")
+        for name, feats in [("M1 fundamentals", FUNDAMENTALS),
+                            ("M3 + reserve + anchor", FUNDAMENTALS + SELLER_ASK + ANCHOR)]:
+            h = temporal_holdout(df, feats, cutoff=args.cutoff)
+            if "error" in h:
+                print(f"  {name}: {h['error']}")
+                continue
+            print(f"  {name}: test R2={h['r2_test']:.3f} "
+                  f"skill_vs_naive={h['skill_vs_naive']:.3f} "
+                  f"median_abs_err={h['median_abs_pct_err']:.1%} "
+                  f"(train {h['n_train']}, test {h['n_test']})")
+
+        print("\n=== anchoring ===")
+        for k, v in anchor_analysis(df).items():
+            print(f"  {k}: {v:.4f}" if isinstance(v, float) else f"  {k}: {v}")
+
+        print("\n=== sync-spike check: does the market normalize LTM? ===")
+        print(spike_check(df).to_string(index=False))
+
+        print(f"\n=== most underpriced vs M3 (in-sample, hypothesis generator) ===")
+        scr = residual_screen(df, results[3])
+        cols = ["listing_id", "title", "deal_date", "ltm", "dollar_age",
+                "multiple_gross", "predicted_multiple", "mispricing_pct"]
+        print(scr.head(args.top_n)[cols].to_string(index=False))
+        print(f"\n=== most overpriced vs M3 ===")
+        print(scr.tail(args.top_n)[cols].to_string(index=False))
+
+        if args.out:
+            df.to_parquet(args.out)
+            scr.to_parquet(args.out.replace(".parquet", "_residuals.parquet"))
+            print(f"\nwrote {args.out} and residuals")
+        return 0
+    finally:
+        con.close()
+
+
 # --------------------------------------------------------------------
 
 def main(argv=None) -> int:
@@ -259,6 +323,16 @@ def main(argv=None) -> int:
     sr.add_argument("--all-access", action="store_true",
                     help="compute fee-loaded multiples assuming fees are waived")
     sr.set_defaults(func=cmd_rebuild)
+
+    sp2 = sub.add_parser("pricing", help="Phase 2: clearing-multiple regression")
+    sp2.add_argument("--min-year", type=int, default=2020)
+    sp2.add_argument("--cutoff", default="2025-01-01",
+                     help="temporal holdout split date")
+    sp2.add_argument("--include-legacy", action="store_true",
+                     help="include pre-2022 auction-mechanism listings")
+    sp2.add_argument("--top-n", type=int, default=15)
+    sp2.add_argument("--out", default=None, help="write frame to parquet")
+    sp2.set_defaults(func=cmd_pricing)
 
     srep = sub.add_parser("report", help="coverage, quality and queue status")
     srep.set_defaults(func=cmd_report)

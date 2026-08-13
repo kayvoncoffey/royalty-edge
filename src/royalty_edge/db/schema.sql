@@ -417,7 +417,9 @@ WITH track_sets AS (
            count(t.track_id) AS n_tracks
     FROM obs_track t
     JOIN obs_listing o USING (obs_id)
-    WHERE t.track_id != '' AND t.parent_track_id = ''   -- root works only
+    -- parser stores '' as NULL, so coalesce before comparing: NULL = '' is
+    -- never true and would silently filter out every root work.
+    WHERE coalesce(t.track_id,'') != '' AND coalesce(t.parent_track_id,'') = ''
     GROUP BY t.obs_id, o.listing_id
 ), pairs AS (
     SELECT a.listing_id AS first_listing_id,
