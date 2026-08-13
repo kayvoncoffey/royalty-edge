@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: royalty-edge
+Version: 0.2.0
+Summary: Quantitative pricing of music and IP royalty catalogs listed at auction
+Requires-Python: >=3.11
+Requires-Dist: duckdb>=1.0
+Requires-Dist: pandas>=2.0
+Requires-Dist: numpy>=1.26
+Requires-Dist: scipy>=1.11
+Requires-Dist: statsmodels>=0.14
+Requires-Dist: requests>=2.31
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: jupyter; extra == "dev"
+Requires-Dist: matplotlib; extra == "dev"
+Requires-Dist: seaborn; extra == "dev"

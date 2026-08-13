@@ -70,17 +70,30 @@ class PoliteFetcher:
         self._robots: dict[str, urllib.robotparser.RobotFileParser] = {}
 
     # -- robots -------------------------------------------------------
+    # We fetch robots.txt ourselves with our own session so the server sees
+    # the same User-Agent as the actual requests. The stdlib RobotFileParser
+    # uses urllib with its own UA, which can get a 403 or redirect and then
+    # silently treats the entire site as Disallow: / as a safe fallback.
 
     def _robots_for(self, url: str) -> urllib.robotparser.RobotFileParser:
         root = "{0.scheme}://{0.netloc}".format(urlparse(url))
         if root not in self._robots:
             rp = urllib.robotparser.RobotFileParser()
-            rp.set_url(urljoin(root, "/robots.txt"))
+            robots_url = urljoin(root, "/robots.txt")
             try:
-                rp.read()
-            except Exception as exc:  # unreadable robots => treat as disallow
-                log.warning("robots.txt unreadable for %s (%s); blocking", root, exc)
-                rp.disallow_all = True
+                resp = self.session.get(robots_url, timeout=self.cfg.timeout_s)
+                if resp.status_code == 200:
+                    rp.set_url(robots_url)
+                    rp.parse(resp.text.splitlines())
+                elif resp.status_code in (401, 403, 404):
+                    # No robots.txt or gated behind auth: treat as allow-all
+                    log.debug("robots.txt %s for %s; treating as allow-all",
+                              resp.status_code, root)
+                else:
+                    log.warning("robots.txt unexpected status %s for %s; allowing",
+                                resp.status_code, root)
+            except Exception as exc:
+                log.warning("robots.txt fetch failed for %s (%s); allowing", root, exc)
             self._robots[root] = rp
         return self._robots[root]
 
