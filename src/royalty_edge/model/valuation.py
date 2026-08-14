@@ -52,65 +52,118 @@ BUYER_FEE_MIN = 500.0
 
 @dataclass
 class Scenario:
+    """A scenario is a statement about the FUTURE, relative to today.
+
+    Earlier versions scaled the fitted parameters. That stops working once
+    the projection is anchored to observed income: scaling a floor parameter
+    moves the asymptote and the anchor point together, and after re-anchoring
+    the trajectory is nearly unchanged. Expressing scenarios as a forward
+    decay rate and a terminal share of TODAY's income makes them independent
+    of the fitted parameterization, comparable across functional forms, and
+    -- more importantly -- directly arguable. "Settles at 40% of current
+    income" is a claim someone can disagree with. "floor_multiplier = 0.65"
+    is not.
+    """
     name: str
-    decay_multiplier: float           # scales the fitted decay rate
+    decay_multiplier: float | None      # scales the forward decay rate
     label: str
-    floor_multiplier: float = 1.0     # scales the fitted long-tail asymptote
+    terminal_multiplier: float = 1.0    # scales the terminal share of today
+    fixed_annual_decline: float | None = None
 
 
-# Scenarios must stress the parameter that actually carries the value.
-# For a mature catalog fitted with exp_floor, almost all the NPV is the
-# asymptote, not the decay rate -- by the time it is listed the steep phase is
-# already history. Scaling only lambda there produces three nearly identical
-# numbers and a false sense of robustness. The floor is the exposure, so the
-# bear case cuts the floor, and that is also the honest statement of the risk:
-# the question is not "how fast does it fall" but "what does it settle at".
 SCENARIOS = [
-    Scenario("bull", 0.60, "slower decay, floor holds 20% higher", 1.20),
-    Scenario("base", 1.00, "fitted decay and floor", 1.00),
-    Scenario("bear", 1.75, "faster decay, floor 35% lower", 0.65),
-    Scenario("floor_collapse", 1.00, "fitted decay, floor cut in half", 0.50),
-    Scenario("flat_income", 0.0, "income never declines (the naive bidder's model)"),
-    Scenario("minus_10pct", None, "fixed -10%/yr regardless of fit"),
+    Scenario("bull", 0.60, "slower decay, 20% higher long-run floor", 1.20),
+    Scenario("base", 1.00, "decay and floor as fitted", 1.00),
+    Scenario("bear", 1.75, "faster decay, 35% lower floor", 0.65),
+    Scenario("floor_collapse", 1.00, "as fitted but the long tail halves", 0.50),
+    Scenario("flat_income", 0.0, "income never declines (the naive bidder's model)", 1.0),
+    Scenario("minus_10pct", None, "fixed -10%/yr regardless of fit",
+             fixed_annual_decline=-0.10),
 ]
 
 
-def project_income(form: str, params, t_start: float, horizon_years: float,
-                   *, decay_multiplier: float = 1.0,
-                   floor_multiplier: float = 1.0,
+def forward_params(form: str, params, t_end: float) -> tuple[float, float]:
+    """Reduce any fitted form to the two numbers that drive a valuation:
+
+        lam_fwd  -- the local decay rate at the end of the observed history
+        s        -- the long-run floor as a share of income TODAY
+
+    Everything a buyer is actually purchasing is in these two numbers plus
+    the current run rate. The functional form's only job is to estimate them
+    from history; once estimated, the form itself is irrelevant to the NPV,
+    which is what makes valuations comparable across catalogs fitted with
+    different forms.
+    """
+    p = np.asarray(params, dtype=float)
+    t = max(float(t_end), 1e-6)
+
+    if form == "exponential":
+        return max(float(p[1]), 0.0), 0.0
+
+    if form == "power":
+        # local log-slope of A*(1+t)^-alpha is alpha/(1+t)
+        return max(float(p[1]) / (1.0 + t), 0.0), 0.0
+
+    if form == "exp_floor":
+        lam = max(float(p[1]), 0.0)
+        f = 1.0 / (1.0 + np.exp(-float(p[2])))
+        # level today relative to A, and the floor relative to that level
+        level_now = f + (1.0 - f) * np.exp(-lam * t)
+        s = float(np.clip(f / level_now, 0.0, 1.0)) if level_now > 0 else 0.0
+        return lam, s
+
+    if form == "two_phase":
+        lam1, lam2, tau = float(p[1]), float(p[2]), float(p[3])
+        return max(lam2 if t > tau else lam1, 0.0), 0.0
+
+    return 0.0, 0.0
+
+
+def project_forward(anchor_level: float, lam_fwd: float, terminal_share: float,
+                    horizon_years: float, *, steps_per_year: int = 4
+                    ) -> np.ndarray:
+    """Quarterly income from today forward.
+
+        y(u) = anchor * (s + (1 - s) * exp(-lam * u))
+
+    Monotonically non-increasing for lam >= 0 and s in [0, 1], so it cannot
+    diverge for any input the callers can produce.
+    """
+    n = int(round(horizon_years * steps_per_year))
+    if n <= 0:
+        return np.zeros(0)
+    u = np.arange(1, n + 1) / steps_per_year
+    s = float(np.clip(terminal_share, 0.0, 1.0))
+    lam = max(float(lam_fwd), 0.0)
+    return anchor_level * (s + (1.0 - s) * np.exp(-lam * u))
+
+
+def project_income(form: str, params, t_start: float, horizon_years: float, *,
+                   decay_multiplier: float | None = 1.0,
+                   terminal_multiplier: float = 1.0,
+                   anchor_level: float | None = None,
                    fixed_annual_decline: float | None = None,
                    steps_per_year: int = 4) -> tuple[np.ndarray, np.ndarray]:
-    """Project quarterly income forward from t_start.
-
-    decay_multiplier scales the rate parameters only, never the level -- so a
-    bear case is 'this decays faster', not 'this is smaller', which are
-    different claims and only the first is a decay assumption.
-    """
+    lam_fwd, s = forward_params(form, params, t_start)
+    if anchor_level is None:
+        anchor_level = float(np.exp(_eval(form, np.array([t_start]),
+                                          np.asarray(params)))[0])
     n = int(round(horizon_years * steps_per_year))
     t = t_start + np.arange(1, n + 1) / steps_per_year
 
     if fixed_annual_decline is not None:
-        y0 = float(np.exp(_eval(form, np.array([t_start]), np.asarray(params)))[0])
-        yrs = np.arange(1, n + 1) / steps_per_year
-        return t, y0 * (1 + fixed_annual_decline) ** yrs / steps_per_year * steps_per_year
+        u = np.arange(1, n + 1) / steps_per_year
+        return t, anchor_level * (1 + fixed_annual_decline) ** u
 
-    p = np.asarray(params, dtype=float).copy()
-    if decay_multiplier != 1.0:
-        if form in ("exponential", "power", "exp_floor"):
-            p[1] *= decay_multiplier
-        elif form == "two_phase":
-            p[1] *= decay_multiplier
-            p[2] *= decay_multiplier
-    if floor_multiplier != 1.0 and form == "exp_floor":
-        # log-parameterized asymptote
-        p[2] = p[2] + np.log(floor_multiplier)
-    return t, np.exp(_eval(form, t, p))
+    lam = 0.0 if decay_multiplier is None else lam_fwd * decay_multiplier
+    s_adj = float(np.clip(s * terminal_multiplier, 0.0, 1.0))
+    return t, project_forward(anchor_level, lam, s_adj, horizon_years,
+                              steps_per_year=steps_per_year)
 
 
 def npv(quarterly_income: np.ndarray, rate: float, *,
         steps_per_year: int = 4) -> float:
-    """Discount a quarterly stream. Income here is a quarterly *rate*, so each
-    element is already a quarter's cash."""
+    """Discount a quarterly stream; each element is one quarter's cash."""
     k = np.arange(1, len(quarterly_income) + 1) / steps_per_year
     return float(np.sum(quarterly_income / (1 + rate) ** k))
 
@@ -135,25 +188,30 @@ def value_catalog(*, listing_id: int, form: str, params, t_end: float,
                   ltm: float, normalized_base: float | None = None,
                   term_family: str = "perpetual", term_years: float | None = None,
                   rate: float = DEFAULT_RATE,
-                  scenario: Scenario | None = None) -> Valuation:
+                  scenario: Scenario | None = None,
+                  anchor_level: float | None = None) -> Valuation:
+    """anchor_level: observed current QUARTERLY income; defaults to ltm/4.
+
+    LTM is measured; the fitted curve's endpoint is an extrapolation of a
+    noisy regression to its own boundary. On these panels the two differ by
+    tens of percent and the error multiplies through the whole NPV, so the
+    measured quantity is used for level and the fit is used only for shape.
+    """
     scenario = scenario or SCENARIOS[1]
+    if anchor_level is None:
+        anchor_level = ltm / 4.0 if ltm and ltm > 0 else None
     horizon = (PERPETUITY_HORIZON_Y if term_family == "perpetual"
                else float(term_years or 10.0))
 
-    if scenario.name == "minus_10pct":
-        _, q = project_income(form, params, t_end, horizon,
-                              fixed_annual_decline=-0.10)
-    elif scenario.name == "flat_income":
-        y0 = float(np.exp(_eval(form, np.array([t_end]), np.asarray(params)))[0])
-        q = np.full(int(horizon * 4), y0)
-    else:
-        _, q = project_income(form, params, t_end, horizon,
-                              decay_multiplier=scenario.decay_multiplier,
-                              floor_multiplier=scenario.floor_multiplier)
+    _, q = project_income(
+        form, params, t_end, horizon, anchor_level=anchor_level,
+        decay_multiplier=scenario.decay_multiplier,
+        terminal_multiplier=scenario.terminal_multiplier,
+        fixed_annual_decline=scenario.fixed_annual_decline)
 
     pv = npv(q, rate)
     base = normalized_base if normalized_base and normalized_base > 0 else ltm
-    run_rate = float(np.exp(_eval(form, np.array([t_end]), np.asarray(params)))[0]) * 4
+    run_rate = (anchor_level * 4 if anchor_level is not None else np.nan)
     return Valuation(
         listing_id=listing_id, form=form, scenario=scenario.name, rate=rate,
         horizon_years=horizon, npv_income=pv, ltm=ltm, normalized_base=base,
@@ -310,6 +368,7 @@ def scenario_spread(valuations: pd.DataFrame, *, rate: float = DEFAULT_RATE
 def implied_discount_rate(form, params, t_end: float, price: float, *,
                           term_family: str = "perpetual",
                           term_years: float | None = None,
+                          anchor_level: float | None = None,
                           lo: float = 1e-4, hi: float = 2.0) -> float:
     """The discount rate at which the model's projection exactly justifies the
     price actually paid. This is the buyer's implied IRR on the projected
@@ -332,8 +391,10 @@ def implied_discount_rate(form, params, t_end: float, price: float, *,
     horizon = (PERPETUITY_HORIZON_Y if term_family == "perpetual"
                else float(term_years or 10.0))
 
+    _, q = project_income(form, params, t_end, horizon,
+                          anchor_level=anchor_level)
+
     def excess(r: float) -> float:
-        _, q = project_income(form, params, t_end, horizon)
         return npv(q, r) - price
 
     try:
@@ -361,10 +422,13 @@ def implied_rate_table(best_fits: pd.DataFrame, frame: pd.DataFrame) -> pd.DataF
         price = r.get("clearing_price")
         if not price or not np.isfinite(price) or price <= 0:
             continue
+        ltm_v = r.get("ltm")
+        anchor = (float(ltm_v) / 4.0
+                  if ltm_v and np.isfinite(ltm_v) and ltm_v > 0 else None)
         rate = implied_discount_rate(
             r["form"], params, float(r.get("span_years") or 0.0), float(price),
             term_family=r.get("term_family") or "perpetual",
-            term_years=r.get("term_years"))
+            term_years=r.get("term_years"), anchor_level=anchor)
         rows.append({"listing_id": int(r["listing_id"]),
                      "title": r.get("title"),
                      "term_family": r.get("term_family"),

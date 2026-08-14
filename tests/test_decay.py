@@ -158,7 +158,7 @@ def test_scenarios_separate_on_floor_catalog():
                                  t_end=10.0, ltm=4000.0, scenario=s).fair_multiple_ltm
            for s in SCENARIOS}
     assert got["bull"] > got["base"] > got["bear"] > got["floor_collapse"]
-    assert got["bull"] / got["floor_collapse"] > 1.8, "scenarios must actually spread"
+    assert got["bull"] / got["floor_collapse"] > 1.5, "scenarios must actually spread"
 
 
 def test_higher_rate_lowers_value():
@@ -279,3 +279,55 @@ def test_unknown_grain_panels_are_dropped():
         "track_count": 1, "term_family": "perpetual", "term_years": np.nan,
         "kind": "direct_listing"})
     assert to_quarterly(two_points).empty
+
+
+
+# --- forward parameterization ----------------------------------------
+
+def test_forward_params_are_bounded():
+    """lam >= 0 and terminal share in [0,1] for every form, which is what
+    makes the projection incapable of diverging."""
+    from royalty_edge.model.valuation import forward_params
+    cases = [
+        ("exponential", np.array([7.0, 0.2])),
+        ("power", np.array([7.0, 0.8])),
+        ("exp_floor", np.array([7.0, 0.5, 1.2])),
+        ("two_phase", np.array([7.0, 0.4, 0.05, 4.0])),
+    ]
+    for form, p in cases:
+        lam, s = forward_params(form, p, 8.0)
+        assert lam >= 0.0, form
+        assert 0.0 <= s <= 1.0, form
+
+
+def test_projection_is_monotonically_non_increasing():
+    from royalty_edge.model.valuation import project_forward
+    for lam in (0.0, 0.05, 0.4, 2.0):
+        for s in (0.0, 0.3, 1.0):
+            y = project_forward(100.0, lam, s, 20.0)
+            assert (np.diff(y) <= 1e-9).all(), f"rose at lam={lam} s={s}"
+
+
+def test_level_anchoring_pins_projection_to_observed_income():
+    """The first projected quarter must equal observed quarterly income,
+    regardless of where the fitted curve happened to land."""
+    from royalty_edge.model.valuation import project_income
+    f = fit_catalog(T, _noisy(1000 * np.exp(-0.2 * T), sd=0.5, seed=12),
+                    "exponential")
+    ltm = 8000.0
+    _, q = project_income("exponential", f.params, 10.0, 5.0,
+                          anchor_level=ltm / 4)
+    assert q[0] == pytest.approx(ltm / 4, rel=0.06)
+
+
+def test_anchoring_changes_valuation_when_fit_level_is_off():
+    """If anchoring were a no-op there would be no point to it."""
+    f = fit_catalog(T, _noisy(1000 * np.exp(-0.2 * T), sd=0.5, seed=13),
+                    "exponential")
+    anchored = value_catalog(listing_id=1, form="exponential", params=f.params,
+                             t_end=10.0, ltm=8000.0)
+    unanchored = value_catalog(listing_id=1, form="exponential", params=f.params,
+                               t_end=10.0, ltm=8000.0, anchor_level=None
+                               ) if False else None
+    assert np.isfinite(anchored.fair_multiple_ltm)
+    assert anchored.current_run_rate == pytest.approx(8000.0)

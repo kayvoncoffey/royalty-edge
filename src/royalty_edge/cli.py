@@ -325,6 +325,27 @@ def cmd_decay(args) -> int:
             return 1
         best = select_best(fits)
         print(best["form"].value_counts().rename("catalogs").to_frame().to_string())
+        import numpy as _np
+        from .model.valuation import forward_params as _fp
+        fwd = []
+        for _, r in best.iterrows():
+            pr = r["params"]
+            if isinstance(pr, str):
+                pr = eval(pr)  # noqa: S307
+            lam, share = _fp(r["form"], pr, float(r.get("span_years") or 0.0))
+            fwd.append({"lam_fwd": lam, "terminal_share": share})
+        fwd = pd.DataFrame(fwd)
+        pinned = float((fwd["lam_fwd"] < 1e-6).mean())
+        print(f"\nforward decay rate: median {fwd['lam_fwd'].median():.4f}/yr, "
+              f"{pinned:.1%} pinned at zero (fitted as flat)")
+        print(f"implied annual decline at the median: "
+              f"{1 - _np.exp(-fwd['lam_fwd'].median()):.1%}")
+        if pinned > 0.4:
+            print("NOTE: most panels are too short and too noisy to identify a decay")
+            print("      rate individually, so the constrained fit lands at flat. The")
+            print("      pooled age profile above is the more trustworthy estimate of")
+            print("      the decay process; treat per-catalog rates as weak evidence.")
+
         print("\nfit quality by chosen form:")
         print(best.groupby("form").agg(
             n=("listing_id", "size"),
