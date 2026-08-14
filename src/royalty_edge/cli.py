@@ -31,7 +31,8 @@ from .fetch.session import build_session, load_cookie
 from .model.features import FrameSpec, load_frame, FUNDAMENTALS, SELLER_ASK, ANCHOR
 from .model.pricing import (anchor_analysis, fit_ladder, ladder_table,
                             residual_screen, spike_check, temporal_holdout)
-from .model.decay import (decompose_composition, diagnose_reporting_lag, fit_all,
+from .model.decay import (age_profile_diagnostics, cohort_stratified_profile,
+                         decompose_composition, diagnose_reporting_lag, fit_all,
                          fit_pooled_curve, pooled_curve_summary,
                          load_panels, market_drift, pooled_age_profile,
                          select_best, shrink_estimates, to_quarterly,
@@ -369,6 +370,38 @@ def cmd_decay(args) -> int:
             print("(index rebased to the first quarter shown; quarters "
                   "resting on fewer than 20 catalogs are suppressed)")
 
+        print("\n=== who is in each age bin? (age-cohort confounding check) ===")
+        diag_age = age_profile_diagnostics(q_trim)
+        if not diag_age.empty:
+            print(diag_age.to_string(index=False))
+            early = diag_age[diag_age["age_bin"] <= 3]["median_cohort_year"].median()
+            late = diag_age[diag_age["age_bin"] >= 15]["median_cohort_year"].median()
+            if pd.notna(early) and pd.notna(late) and (early - late) > 8:
+                print(f"\n  Young bins are cohort ~{early:.0f}, old bins ~{late:.0f}.")
+                print("  Age and cohort are collinear by construction, cohort is the")
+                print("  omitted term, so cohort decline loads onto the age profile.")
+                print("  Read 'decay accelerates with age' as UNSAFE: it may be that")
+                print("  songs from the older cohort are losing ground in the streaming")
+                print("  era, which is a claim about those songs and not about ageing.")
+
+        print("\n=== same-age decay, early vs late cohorts ===")
+        print("(restricted to ages both cohorts reach, so it is like-for-like)")
+        coh = cohort_stratified_profile(q_trim, split_year=args.cohort_split)
+        if not coh.empty:
+            print(coh.round(4).to_string(index=False))
+            vals = coh.dropna(subset=["annual_decay"])
+            if len(vals) == 2:
+                gap = abs(vals["annual_decay"].iloc[0] - vals["annual_decay"].iloc[1])
+                pooled_se = float(np.sqrt((vals["se"] ** 2).sum()))
+                if gap > 2 * pooled_se:
+                    print(f"\n  The two cohorts decay at materially different rates at")
+                    print(f"  the SAME age (gap {gap:.1%}, ~{gap/max(pooled_se,1e-9):.1f} SE).")
+                    print("  The pooled profile is therefore not a pure age effect and")
+                    print("  should not be extrapolated to a new catalog wholesale.")
+                else:
+                    print(f"\n  Cohorts decay similarly at the same age (gap {gap:.1%}),")
+                    print("  which supports reading the profile as an age effect.")
+
         pooled_params = fit_pooled_curve(prof)
         if pooled_params is not None:
             print("\n=== pooled profile as a projectable curve ===")
@@ -530,6 +563,8 @@ def main(argv=None) -> int:
     sp3.add_argument("--trim", type=int, default=None,
                      help="trailing quarters to drop; default auto-detect")
     sp3.add_argument("--rate", type=float, default=0.12, help="discount rate")
+    sp3.add_argument("--cohort-split", type=int, default=2012,
+                     help="first-earnings year splitting early/late cohorts")
     sp3.add_argument("--decay-source", default="blend",
                      choices=("fit", "pooled", "blend"),
                      help="per-catalog fit, pooled age profile, or blend")

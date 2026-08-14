@@ -685,3 +685,88 @@ def pooled_curve_summary(params: np.ndarray) -> dict:
         "half_life_years": float(np.log(2) / lam) if lam > 1e-6 else np.inf,
         "long_run_floor_share_of_peak": frac,
     }
+
+
+# --------------------------------------------------------------------
+# Age-cohort confounding
+# --------------------------------------------------------------------
+
+def age_profile_diagnostics(q: pd.DataFrame, *, max_age: float = 25.0,
+                            min_obs: int = 8) -> pd.DataFrame:
+    """Who is actually in each age bin?
+
+    The pooled profile is estimated on an unbalanced panel: a catalog reaches
+    age bin 20 only if its earnings history spans twenty years, which means it
+    began earning twenty years ago. The late age bins are therefore populated
+    exclusively by old cohorts, and their behaviour in the observation window
+    is the behaviour of pre-streaming songs during the streaming era.
+
+    Age, period and cohort are linearly dependent, so the two-way model has to
+    omit one and it omits cohort -- which means any cohort effect loads onto
+    age. If the late bins show a much older median cohort than the early bins,
+    the "decay accelerates with age" reading is unsafe: it may be "songs
+    written in 1998 are losing ground", which is a statement about 1998 and
+    not about ageing.
+
+    This table is the check. Compare n_catalogs and median_cohort_year across
+    bins before trusting any part of the profile.
+    """
+    d = q[q["total"] > 0].copy()
+    counts = d.groupby("listing_id")["total"].transform("size")
+    d = d[counts >= min_obs]
+    d = d[d["age_years"] <= max_age]
+    if d.empty:
+        return pd.DataFrame()
+    d["age_bin"] = np.floor(d["age_years"]).astype(int)
+    d["cohort_year"] = pd.to_datetime(d["first_earnings_date"]).dt.year
+    g = (d.groupby("age_bin")
+           .agg(n_catalogs=("listing_id", "nunique"),
+                n_rows=("total", "size"),
+                median_cohort_year=("cohort_year", "median"),
+                min_cohort_year=("cohort_year", "min"),
+                max_cohort_year=("cohort_year", "max"))
+           .reset_index())
+    return g
+
+
+def cohort_stratified_profile(q: pd.DataFrame, *, split_year: int = 2012,
+                              common_max_age: float = 8.0,
+                              min_obs: int = 8) -> pd.DataFrame:
+    """Estimate the age profile separately for early and late cohorts.
+
+    Restricted to an age range both cohorts actually reach, so the comparison
+    is like-for-like. If the two profiles have similar slopes, age is doing
+    the work and the pooled curve is trustworthy over that range. If the older
+    cohort declines much faster at the same age, the pooled profile is picking
+    up cohort decline and should not be extrapolated to a new catalog.
+    """
+    import statsmodels.api as sm
+    d = q[q["total"] > 0].copy()
+    counts = d.groupby("listing_id")["total"].transform("size")
+    d = d[counts >= min_obs]
+    d = d[d["age_years"] <= common_max_age]
+    d["cohort_year"] = pd.to_datetime(d["first_earnings_date"]).dt.year
+    out = []
+    for label, sub in (("early_cohort", d[d["cohort_year"] < split_year]),
+                       ("late_cohort", d[d["cohort_year"] >= split_year])):
+        if sub["listing_id"].nunique() < 30:
+            out.append({"cohort": label, "n_catalogs": sub["listing_id"].nunique(),
+                        "annual_decay": np.nan, "se": np.nan})
+            continue
+        sub = sub.copy()
+        sub["ly"] = np.log(sub["total"])
+        sub["ly_dm"] = sub["ly"] - sub.groupby("listing_id")["ly"].transform("mean")
+        sub["cal_q"] = sub["period_start"].dt.to_period("Q").astype(str)
+        X = pd.get_dummies(sub[["cal_q"]].astype(str), drop_first=True, dtype=float)
+        X["age_years"] = sub["age_years"].to_numpy(float)
+        X = X.sub(X.groupby(sub["listing_id"].values).transform("mean"))
+        res = sm.OLS(sub["ly_dm"].to_numpy(float),
+                     sm.add_constant(X.to_numpy(float))).fit(
+            cov_type="cluster", cov_kwds={"groups": sub["listing_id"].to_numpy()})
+        idx = list(X.columns).index("age_years") + 1
+        slope = float(res.params[idx])
+        out.append({"cohort": label,
+                    "n_catalogs": int(sub["listing_id"].nunique()),
+                    "annual_decay": 1 - float(np.exp(slope)),
+                    "se": float(res.bse[idx])})
+    return pd.DataFrame(out)
