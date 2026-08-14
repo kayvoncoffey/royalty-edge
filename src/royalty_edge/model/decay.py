@@ -225,18 +225,31 @@ def f_power(t, log_a, alpha):
     return log_a - alpha * np.log1p(t)
 
 
-def f_exp_floor(t, log_a, lam, log_c):
+def f_exp_floor(t, log_a, lam, logit_f):
     """Exponential decay onto a stable floor.
 
-    This is the form that matches the stylized fact everyone describes: a
-    steep fall from the promotional peak, settling into a long tail that does
-    not go to zero. Pure exponential sends income to zero and undervalues a
+    y(t) = A * (f + (1 - f) * exp(-lam * t)),  f = sigmoid(logit_f) in (0, 1)
+
+    This is the form matching the stylized fact everyone describes: a steep
+    fall from the promotional peak settling into a long tail that does not go
+    to zero. Pure exponential sends income to zero and undervalues a
     perpetuity; power law decays too slowly at long horizons and overvalues
-    it. The floor parameter is exactly the quantity a perpetuity buyer is
-    actually purchasing.
+    it. The floor is exactly what a perpetuity buyer is purchasing.
+
+    PARAMETERIZATION MATTERS HERE. The natural form (A - C)*exp(-lam*t) + C
+    with C fitted freely has a trapdoor: when C > A the leading coefficient
+    goes negative and the curve RISES toward the asymptote. Fitted to a
+    catalog that happened to grow, it produces a rising perpetuity even with
+    lam constrained positive -- the same divergence as a negative decay rate,
+    reached by a different route. Expressing the floor as a FRACTION f of the
+    initial level makes C <= A true by construction, so the curve is
+    monotonically non-increasing for any parameter values the optimizer can
+    reach. f is also directly interpretable: the share of today's income that
+    survives forever, which is the number a perpetuity bid actually rests on.
     """
-    a, c = np.exp(log_a), np.exp(log_c)
-    return np.log(np.maximum((a - c) * np.exp(-lam * t) + c, 1e-9))
+    f = 1.0 / (1.0 + np.exp(-logit_f))
+    a = np.exp(log_a)
+    return np.log(np.maximum(a * (f + (1.0 - f) * np.exp(-lam * t)), 1e-12))
 
 
 def f_two_phase(t, log_a, lam1, lam2, tau):
@@ -278,10 +291,10 @@ def _p0_bounds(form: str, t: np.ndarray, y: np.ndarray):
     if form == "power":
         return [log_a0, 0.5], ([-30, 0.0], [30, 5.0])
     if form == "exp_floor":
-        floor0 = float(np.log(max(np.percentile(y, 25), 1e-6)))
-        floor0 = min(floor0, log_ymax)
-        # the asymptote cannot exceed the highest level ever observed
-        return [log_a0, 0.4, floor0], ([-30, 0.0, -30], [30, 5.0, log_ymax])
+        # start from the observed tail level as a share of the initial level
+        share = float(np.clip(np.percentile(y, 25) / max(y[0], 1e-9), 0.02, 0.95))
+        logit0 = float(np.log(share / (1 - share)))
+        return [log_a0, 0.4, logit0], ([-30, 0.0, -6.0], [30, 5.0, 6.0])
     if form == "two_phase":
         return [log_a0, 0.35, 0.05, 4.0], ([-30, 0.0, 0.0, 0.5], [30, 5, 5, 12])
     raise ValueError(form)
@@ -314,7 +327,10 @@ def _summarize(form: str, p: np.ndarray, t_end: float) -> dict:
         out["half_life_years"] = float(np.log(2) / p[1]) if p[1] > 1e-6 else np.inf
     elif form == "exp_floor":
         out["half_life_years"] = float(np.log(2) / p[1]) if p[1] > 1e-6 else np.inf
-        out["floor_share"] = float(np.exp(p[2]) / y_now) if y_now > 0 else None
+        frac = 1.0 / (1.0 + np.exp(-p[2]))
+        floor_level = np.exp(p[0]) * frac
+        # share of TODAY's run rate that persists -- the perpetuity buyer's number
+        out["floor_share"] = float(floor_level / y_now) if y_now > 0 else None
     elif form == "two_phase":
         lam = p[2] if t_end > p[3] else p[1]
         out["half_life_years"] = float(np.log(2) / lam) if lam > 1e-6 else np.inf
@@ -523,10 +539,15 @@ def market_drift(q: pd.DataFrame, *, min_obs: int = 8) -> pd.DataFrame:
     # the raw levels uninterpretable. Rebase to the first quarter shown so the
     # series reads as an index, and carry the catalog count -- early and very
     # recent quarters rest on few panels and should not be over-read.
+    out["n_catalogs"] = out["quarter"].map(counts).fillna(0).astype(int)
+    out = out[out["n_catalogs"] >= 20].reset_index(drop=True)
+    if out.empty:
+        return out
+    # rebase AFTER the sparse-quarter filter, or the index is anchored to a
+    # quarter that was then suppressed and the levels read as a 5x market move
     out["log_effect"] = out["log_effect"] - out["log_effect"].iloc[0]
     out["index_level"] = np.exp(out["log_effect"])
-    out["n_catalogs"] = out["quarter"].map(counts).fillna(0).astype(int)
-    return out[out["n_catalogs"] >= 20].reset_index(drop=True)
+    return out
 
 
 # --------------------------------------------------------------------

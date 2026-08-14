@@ -35,7 +35,8 @@ from .model.decay import (decompose_composition, diagnose_reporting_lag, fit_all
                          load_panels, market_drift, pooled_age_profile,
                          select_best, shrink_estimates, to_quarterly,
                          trim_partial_tail)
-from .model.valuation import (compare_to_market, rate_sensitivity,
+from .model.valuation import (compare_to_market, implied_rate_summary,
+                             implied_rate_table, rate_sensitivity,
                              scenario_spread, value_all)
 
 DEFAULT_DB = "data/royalty_edge.duckdb"
@@ -293,6 +294,7 @@ def cmd_pricing(args) -> int:
 
 def cmd_decay(args) -> int:
     """Phase 3: fit decay curves and produce fair-value multiples."""
+    import numpy as np
     import pandas as pd
     pd.set_option("display.width", 220)
     pd.set_option("display.max_columns", 60)
@@ -381,6 +383,22 @@ def cmd_decay(args) -> int:
             print(cmp_.tail(args.top_n)[cols].to_string(index=False))
             print(f"\nmedian edge_pct across {len(cmp_)} valued lots: "
                   f"{cmp_['edge_pct'].median():.1%}")
+
+        print("\n=== implied discount rate: what is the market actually paying? ===")
+        print("(the rate at which each realized price is exactly justified by the")
+        print(" model's own projection -- the buyer's implied IRR)")
+        irt = implied_rate_table(best, frame)
+        summ = implied_rate_summary(irt)
+        if not summ.empty:
+            print(summ.to_string(index=False))
+            med = summ["median"].iloc[0]
+            print(f"\nMedian clearing buyer is pricing these at {med:.1%}.")
+            print(f"Your hurdle is {args.rate:.0%}. Bid only where the implied rate")
+            print("exceeds the hurdle; the gap between the two IS the decision rule.")
+            solved = irt[np.isfinite(irt["implied_rate"])]
+            if len(solved) > 20:
+                print("\n-- highest implied rate (model says cheapest) --")
+                print(solved.head(args.top_n).to_string(index=False))
             print("A median far from zero means the model and the market disagree")
             print("systematically -- suspect the discount rate or the horizon before")
             print("concluding the whole market is mispriced.")

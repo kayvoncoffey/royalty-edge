@@ -35,6 +35,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
+from scipy import optimize
 
 from .decay import FORMS, _eval
 
@@ -300,3 +301,100 @@ def scenario_spread(valuations: pd.DataFrame, *, rate: float = DEFAULT_RATE
              .agg(n="size", p25=lambda s: s.quantile(.25), median="median",
                   p75=lambda s: s.quantile(.75))
              .round(2).reset_index())
+
+
+# --------------------------------------------------------------------
+# What rate is the market actually paying?
+# --------------------------------------------------------------------
+
+def implied_discount_rate(form, params, t_end: float, price: float, *,
+                          term_family: str = "perpetual",
+                          term_years: float | None = None,
+                          lo: float = 1e-4, hi: float = 2.0) -> float:
+    """The discount rate at which the model's projection exactly justifies the
+    price actually paid. This is the buyer's implied IRR on the projected
+    cash flows.
+
+    This is the number that makes `edge_pct` interpretable. A raw edge of
+    -18% could mean the market is overpaying, or it could mean the 12%
+    discount rate is simply higher than the rate clearing buyers demand -- and
+    those are completely different conclusions. Converting every clearing
+    price into the rate that rationalizes it turns the question into one that
+    can be answered: is the market pricing these at 7% or at 20%? The bid rule
+    then follows directly. Bid where the implied rate exceeds the hurdle;
+    pass otherwise.
+
+    It also relocates the discount-rate assumption. Instead of a number
+    imposed on the analysis, the rate becomes an output measured from
+    observed transactions, and the only judgement left is what return the
+    illiquidity and administrator risk deserve.
+    """
+    horizon = (PERPETUITY_HORIZON_Y if term_family == "perpetual"
+               else float(term_years or 10.0))
+
+    def excess(r: float) -> float:
+        _, q = project_income(form, params, t_end, horizon)
+        return npv(q, r) - price
+
+    try:
+        if excess(lo) < 0:
+            return np.nan          # price above PV even at ~0%: no solution
+        if excess(hi) > 0:
+            return np.inf          # justified at any rate: income dwarfs price
+        return float(optimize.brentq(excess, lo, hi, maxiter=200))
+    except Exception:
+        return np.nan
+
+
+def implied_rate_table(best_fits: pd.DataFrame, frame: pd.DataFrame) -> pd.DataFrame:
+    """Implied rate for every catalog with both a fitted curve and a price."""
+    cols = [c for c in ["listing_id", "title", "kind", "term_family", "term_years",
+                        "deal_date", "ltm", "dollar_age", "clearing_price",
+                        "multiple_gross"] if c in frame.columns]
+    d = best_fits.merge(frame[cols], on="listing_id", how="inner",
+                        suffixes=("", "_f"))
+    rows = []
+    for _, r in d.iterrows():
+        params = r["params"]
+        if isinstance(params, str):
+            params = eval(params)  # noqa: S307
+        price = r.get("clearing_price")
+        if not price or not np.isfinite(price) or price <= 0:
+            continue
+        rate = implied_discount_rate(
+            r["form"], params, float(r.get("span_years") or 0.0), float(price),
+            term_family=r.get("term_family") or "perpetual",
+            term_years=r.get("term_years"))
+        rows.append({"listing_id": int(r["listing_id"]),
+                     "title": r.get("title"),
+                     "term_family": r.get("term_family"),
+                     "deal_date": r.get("deal_date"),
+                     "ltm": r.get("ltm"), "dollar_age": r.get("dollar_age"),
+                     "multiple_gross": r.get("multiple_gross"),
+                     "implied_rate": rate})
+    out = pd.DataFrame(rows)
+    return out.sort_values("implied_rate", ascending=False)
+
+
+def implied_rate_summary(tbl: pd.DataFrame) -> pd.DataFrame:
+    """Distribution of implied rates, and how many lots are unsolvable.
+
+    `n_no_solution` counts lots whose price exceeds the projected income's PV
+    even at a rate near zero -- the model says they can never repay, at any
+    hurdle. A large count there is a statement about the model as much as
+    about the market, and should be read that way first.
+    """
+    if tbl.empty:
+        return tbl
+    finite = tbl[np.isfinite(tbl["implied_rate"])]
+    return pd.DataFrame([{
+        "n_total": len(tbl),
+        "n_solved": len(finite),
+        "n_no_solution": int(tbl["implied_rate"].isna().sum()),
+        "n_any_rate": int(np.isinf(tbl["implied_rate"]).sum()),
+        "p10": finite["implied_rate"].quantile(0.10),
+        "p25": finite["implied_rate"].quantile(0.25),
+        "median": finite["implied_rate"].median(),
+        "p75": finite["implied_rate"].quantile(0.75),
+        "p90": finite["implied_rate"].quantile(0.90),
+    }]).round(4)

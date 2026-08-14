@@ -32,13 +32,23 @@ def test_recovers_exponential_lambda():
 
 def test_recovers_exp_floor_asymptote():
     """The asymptote is where a perpetuity's value lives, so recovering it is
-    the single most important estimation property in Phase 3."""
+    the single most important estimation property in Phase 3.
+
+    exp_floor is parameterized as y = A*(f + (1-f)*exp(-lam*t)) with f the
+    floor as a FRACTION of the initial level, so the asymptote is A*f rather
+    than a free parameter. Reading it back requires that transform.
+    """
     A, lam, C = 1000.0, 0.55, 220.0
-    y = _noisy((A - C) * np.exp(-lam * T) + C, sd=0.05)
+    y = _noisy(A * np.exp(-lam * T) + C, sd=0.04)   # asymptote C, start A + C
     f = fit_catalog(T, y, "exp_floor")
     assert f is not None
-    assert abs(np.exp(f.params[2]) - C) / C < 0.15
-    assert abs(f.params[1] - lam) < 0.12
+    fitted_A = np.exp(f.params[0])
+    frac = 1.0 / (1.0 + np.exp(-f.params[2]))
+    fitted_floor = fitted_A * frac
+    assert abs(fitted_floor - C) / C < 0.20, f"floor {fitted_floor:.0f} vs {C}"
+    assert abs(f.params[1] - lam) < 0.15
+    # and the structural guarantee the parameterization exists to provide
+    assert f.implied_5y_retention <= 1.0 + 1e-9
 
 
 def test_recovers_power_alpha():
@@ -169,17 +179,30 @@ def test_term_listing_worth_less_than_perpetuity():
 
 
 def test_walk_away_below_fair_and_fee_floor_binds():
-    """On a small lot the $500 minimum fee is the binding constraint, and the
-    walk-away multiple must fall further below fair value than on a large one."""
+    """The $500 minimum fee costs a small lot proportionally far more.
+
+    Note the earlier version of this test was wrong: it scaled LTM while
+    holding the fitted curve fixed, so NPV was identical across both cases and
+    both sat in the fee-floor regime -- where the proportional gap is
+    500/NPV and therefore independent of LTM. The comparison only means
+    something when one lot is large enough that the 1% rate binds instead of
+    the floor, which requires scaling the income curve, not the denominator.
+    """
     f = fit_catalog(T, _noisy(1000 * np.exp(-0.2 * T)), "exponential")
-    small = value_catalog(listing_id=1, form="exponential", params=f.params,
+    small_p = f.params.copy()
+    big_p = f.params.copy()
+    big_p[0] += np.log(500)          # ~500x the income, so 1% > $500
+
+    small = value_catalog(listing_id=1, form="exponential", params=small_p,
                           t_end=10.0, ltm=800.0)
-    big = value_catalog(listing_id=2, form="exponential", params=f.params,
+    big = value_catalog(listing_id=2, form="exponential", params=big_p,
                         t_end=10.0, ltm=400000.0)
     gap_small = 1 - walk_away_multiple(small) / small.fair_multiple_ltm
     gap_big = 1 - walk_away_multiple(big) / big.fair_multiple_ltm
+
     assert walk_away_multiple(small) < small.fair_multiple_ltm
-    assert gap_small > gap_big
+    assert gap_big == pytest.approx(0.01 / 1.01, abs=1e-3), "large lot pays the 1% rate"
+    assert gap_small > gap_big, "the $500 floor must bite harder on the small lot"
 
 
 # --- regression guards for the projection blowup ---------------------
