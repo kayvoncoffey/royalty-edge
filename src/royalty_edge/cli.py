@@ -31,6 +31,12 @@ from .fetch.session import build_session, load_cookie
 from .model.features import FrameSpec, load_frame, FUNDAMENTALS, SELLER_ASK, ANCHOR
 from .model.pricing import (anchor_analysis, fit_ladder, ladder_table,
                             residual_screen, spike_check, temporal_holdout)
+from .model.decay import (decompose_composition, diagnose_reporting_lag, fit_all,
+                         load_panels, market_drift, pooled_age_profile,
+                         select_best, shrink_estimates, to_quarterly,
+                         trim_partial_tail)
+from .model.valuation import (compare_to_market, rate_sensitivity,
+                             scenario_spread, value_all)
 
 DEFAULT_DB = "data/royalty_edge.duckdb"
 DEFAULT_LANDING = "landing"
@@ -284,6 +290,109 @@ def cmd_pricing(args) -> int:
         con.close()
 
 
+
+def cmd_decay(args) -> int:
+    """Phase 3: fit decay curves and produce fair-value multiples."""
+    import pandas as pd
+    pd.set_option("display.width", 220)
+    pd.set_option("display.max_columns", 60)
+
+    con = connect(args.db, read_only=True)
+    try:
+        raw = load_panels(con)
+        if raw.empty:
+            print("no earnings panels; run harvest and rebuild first")
+            return 1
+        print(f"=== panels: {raw['listing_id'].nunique()} catalogs, {len(raw)} rows ===")
+        q = to_quarterly(raw)
+        print(q.groupby("grain_source")["listing_id"].nunique()
+                .rename("catalogs").to_frame().to_string())
+
+        print("\n=== reporting-lag diagnostic ===")
+        print("(ratio of each trailing quarter to that panel's own prior-year median;")
+        print(" values well below the deeper plateau mean the statement is incomplete)")
+        diag = diagnose_reporting_lag(q)
+        print(diag.to_string(index=False) if not diag.empty else "(insufficient data)")
+        q_trim, n_trim = trim_partial_tail(q, n_trim=args.trim)
+        print(f"-> trimming {n_trim} trailing quarter(s) from every panel")
+
+        print(f"\n=== fitting {len(q_trim.groupby('listing_id'))} catalogs x 4 forms ===")
+        fits = fit_all(q_trim, min_obs=args.min_obs)
+        if fits.empty:
+            print("no catalog had enough observations to fit")
+            return 1
+        best = select_best(fits)
+        print(best["form"].value_counts().rename("catalogs").to_frame().to_string())
+        print("\nfit quality by chosen form:")
+        print(best.groupby("form").agg(
+            n=("listing_id", "size"),
+            med_rmse_log=("rmse_log", "median"),
+            med_cv_rmse=("cv_rmse", "median"),
+            med_n_obs=("n_obs", "median"),
+            med_5y_retention=("implied_5y_retention", "median"),
+        ).round(3).to_string())
+
+        print("\n=== pooled age profile (net of market drift) ===")
+        prof = pooled_age_profile(q_trim)
+        print(prof.round(4).to_string(index=False) if not prof.empty
+              else "(too few catalogs)")
+
+        print("\n=== market-wide calendar drift ===")
+        print("(common component; decline here is streaming economics, not your catalog)")
+        drift = market_drift(q_trim)
+        if not drift.empty:
+            print(drift.tail(12).round(4).to_string(index=False))
+
+        meta = (q_trim.groupby("listing_id").first().reset_index()
+                [["listing_id", "ltm", "three_years_average", "dollar_age",
+                  "track_count", "term_family", "term_years"]])
+        import numpy as _np
+        meta["log_track_count"] = _np.log(meta["track_count"].fillna(1).clip(lower=1))
+        meta["share_streaming"] = 0.0
+        shrunk = shrink_estimates(best, meta)
+        if not shrunk.empty:
+            print("\n=== 5-year retention: raw vs partially pooled ===")
+            print(shrunk[["retention_5y_raw", "retention_5y_shrunk",
+                          "shrink_weight"]].describe().round(3).to_string())
+
+        print("\n=== valuing every fitted catalog ===")
+        vals = value_all(best, meta, rates=(0.08, 0.12, 0.18))
+        if vals.empty:
+            print("no valuations produced")
+            return 1
+        print(scenario_spread(vals, rate=args.rate).to_string(index=False))
+        print("\nrate sensitivity (fair multiple at 8% vs 18%):")
+        rs = rate_sensitivity(vals)
+        if not rs.empty:
+            print(rs.to_string())
+
+        spec = FrameSpec(min_deal_year=args.min_year)
+        frame, _ = load_frame(con, spec)
+        cmp_ = compare_to_market(vals, frame, rate=args.rate, scenario="base")
+        if not cmp_.empty:
+            cols = [c for c in ["listing_id", "title", "deal_date", "ltm",
+                                "dollar_age", "multiple_gross", "fair_multiple_ltm",
+                                "walk_away_multiple", "edge_pct"] if c in cmp_.columns]
+            print(f"\n=== model says cheapest vs realized clearing (rate={args.rate:.0%}) ===")
+            print(cmp_.head(args.top_n)[cols].to_string(index=False))
+            print("\n=== model says most expensive ===")
+            print(cmp_.tail(args.top_n)[cols].to_string(index=False))
+            print(f"\nmedian edge_pct across {len(cmp_)} valued lots: "
+                  f"{cmp_['edge_pct'].median():.1%}")
+            print("A median far from zero means the model and the market disagree")
+            print("systematically -- suspect the discount rate or the horizon before")
+            print("concluding the whole market is mispriced.")
+
+        if args.out:
+            best.to_parquet(args.out)
+            vals.to_parquet(args.out.replace(".parquet", "_valuations.parquet"))
+            cmp_.to_parquet(args.out.replace(".parquet", "_vs_market.parquet"))
+            print(f"\nwrote {args.out} + valuations + vs_market")
+        return 0
+    finally:
+        con.close()
+
+
 # --------------------------------------------------------------------
 
 def main(argv=None) -> int:
@@ -333,6 +442,17 @@ def main(argv=None) -> int:
     sp2.add_argument("--top-n", type=int, default=15)
     sp2.add_argument("--out", default=None, help="write frame to parquet")
     sp2.set_defaults(func=cmd_pricing)
+
+    sp3 = sub.add_parser("decay", help="Phase 3: decay curves and fair value")
+    sp3.add_argument("--min-obs", type=int, default=8,
+                     help="minimum quarters required to fit a catalog")
+    sp3.add_argument("--trim", type=int, default=None,
+                     help="trailing quarters to drop; default auto-detect")
+    sp3.add_argument("--rate", type=float, default=0.12, help="discount rate")
+    sp3.add_argument("--min-year", type=int, default=2020)
+    sp3.add_argument("--top-n", type=int, default=15)
+    sp3.add_argument("--out", default=None, help="write fits to parquet")
+    sp3.set_defaults(func=cmd_decay)
 
     srep = sub.add_parser("report", help="coverage, quality and queue status")
     srep.set_defaults(func=cmd_report)
