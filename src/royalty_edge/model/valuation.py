@@ -39,6 +39,11 @@ import pandas as pd
 from .decay import FORMS, _eval
 
 DEFAULT_RATE = 0.12
+# Above this, a "valuation" is a divergent projection rather than a price.
+# Real catalogs clear between roughly 1x and 25x; anything past 60x is a fit
+# artifact and is excluded from summaries rather than winsorized, because the
+# right response is to distrust the curve, not to shrink its output.
+SANITY_CAP_MULTIPLE = 60.0
 PERPETUITY_HORIZON_Y = 40.0
 BUYER_FEE_PCT = 0.01
 BUYER_FEE_MIN = 500.0
@@ -190,6 +195,7 @@ def value_all(best_fits: pd.DataFrame, meta: pd.DataFrame, *,
               scenarios: list[Scenario] | None = None) -> pd.DataFrame:
     """Value every catalog with a fitted curve, across rates and scenarios."""
     scenarios = scenarios or SCENARIOS
+    dropped: list[dict] = []
     d = best_fits.merge(meta, on="listing_id", how="left", suffixes=("", "_m"))
     rows = []
     for _, r in d.iterrows():
@@ -213,16 +219,27 @@ def value_all(best_fits: pd.DataFrame, meta: pd.DataFrame, *,
                         term_years=r.get("term_years"), rate=rate, scenario=sc)
                 except Exception:
                     continue
+                fm = v.fair_multiple_ltm
+                if not np.isfinite(fm) or fm <= 0 or fm > SANITY_CAP_MULTIPLE:
+                    # A fair multiple above the cap is a fit artifact, not a
+                    # find. Recording it would let a handful of divergent
+                    # projections dominate every summary statistic downstream.
+                    dropped.append({"listing_id": int(r["listing_id"]),
+                                    "form": r["form"], "scenario": sc.name,
+                                    "rate": rate, "fair_multiple_ltm": fm})
+                    continue
                 rows.append({
                     "listing_id": v.listing_id, "form": v.form,
                     "scenario": v.scenario, "rate": v.rate,
                     "horizon_years": v.horizon_years,
-                    "fair_multiple_ltm": round(v.fair_multiple_ltm, 3),
+                    "fair_multiple_ltm": round(fm, 3),
                     "fair_multiple_normalized": round(v.fair_multiple_normalized, 3),
                     "walk_away_multiple": round(walk_away_multiple(v), 3),
                     "npv_income": round(v.npv_income, 2),
                 })
-    return pd.DataFrame(rows)
+    out = pd.DataFrame(rows)
+    out.attrs["dropped"] = pd.DataFrame(dropped)
+    return out
 
 
 def compare_to_market(valuations: pd.DataFrame, frame: pd.DataFrame, *,

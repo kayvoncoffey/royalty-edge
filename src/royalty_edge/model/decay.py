@@ -100,6 +100,8 @@ def to_quarterly(df: pd.DataFrame) -> pd.DataFrame:
     out = []
     for lid, g in df.groupby("listing_id", sort=False):
         grain = detect_grain(g)
+        if grain == "unknown":
+            continue          # too few points to establish a period; not fittable
         g = g.sort_values("period_start")
         if grain == "month":
             q = (g.set_index("period_start")[["total", "domestic", "intl", "unreported"]]
@@ -109,6 +111,16 @@ def to_quarterly(df: pd.DataFrame) -> pd.DataFrame:
                         .resample("QS").count().reset_index(name="n_months"))
             q = q.merge(counts, on="period_start", how="left")
             q["partial_period"] = q["n_months"] < 3
+        elif grain == "year":
+            # Annual rows carry a full year of income. The curve and the
+            # valuation both treat y(t) as a QUARTERLY rate, so an annual
+            # total left as-is overstates the run rate fourfold and the NPV
+            # with it. Convert to a quarterly-equivalent rate.
+            q = g[["period_start", "total", "domestic", "intl", "unreported"]].copy()
+            for c in ("total", "domestic", "intl", "unreported"):
+                q[c] = q[c] / 4.0
+            q["n_months"] = 12
+            q["partial_period"] = False
         else:
             q = g[["period_start", "total", "domestic", "intl", "unreported"]].copy()
             q["n_months"] = 3
@@ -244,16 +256,34 @@ FORMS = {
 
 
 def _p0_bounds(form: str, t: np.ndarray, y: np.ndarray):
+    """Parameter bounds. Decay rates are constrained NON-NEGATIVE, deliberately.
+
+    A catalog can genuinely have grown over its observed window -- a track
+    catching a playlist, a sync landing, an artist breaking. Fitting that as a
+    negative decay rate describes the history accurately and then, projected
+    forty years forward, prices the catalog as a compounding perpetuity. That
+    is not a valuation, it is a divergent series: unbounded growth extrapolated
+    from a handful of noisy quarters.
+
+    Constraining lambda >= 0 means the most optimistic projectable case is
+    FLAT income. A catalog whose history is genuinely rising fits at lambda
+    close to zero and is valued as a level perpetuity, which is already an
+    aggressive assumption for a decaying asset. Observed growth belongs in the
+    level parameter and in the decision to bid, not in an extrapolated trend.
+    """
     log_a0 = float(np.log(max(y[0], 1e-6)))
+    log_ymax = float(np.log(max(y.max(), 1e-6)))
     if form == "exponential":
-        return [log_a0, 0.15], ([-30, -1.0], [30, 3.0])
+        return [log_a0, 0.15], ([-30, 0.0], [30, 3.0])
     if form == "power":
-        return [log_a0, 0.5], ([-30, -1.0], [30, 5.0])
+        return [log_a0, 0.5], ([-30, 0.0], [30, 5.0])
     if form == "exp_floor":
         floor0 = float(np.log(max(np.percentile(y, 25), 1e-6)))
-        return [log_a0, 0.4, floor0], ([-30, 0.0, -30], [30, 5.0, 30])
+        floor0 = min(floor0, log_ymax)
+        # the asymptote cannot exceed the highest level ever observed
+        return [log_a0, 0.4, floor0], ([-30, 0.0, -30], [30, 5.0, log_ymax])
     if form == "two_phase":
-        return [log_a0, 0.35, 0.05, 4.0], ([-30, -1, -1, 0.5], [30, 5, 5, 12])
+        return [log_a0, 0.35, 0.05, 4.0], ([-30, 0.0, 0.0, 0.5], [30, 5, 5, 12])
     raise ValueError(form)
 
 
@@ -483,10 +513,20 @@ def market_drift(q: pd.DataFrame, *, min_obs: int = 8) -> pd.DataFrame:
                  sm.add_constant(X.to_numpy(float))).fit()
     names = ["const"] + list(X.columns)
     coefs = pd.Series(res.params, index=names)
-    rows = [{"quarter": n.replace("cal_q_", ""), "log_effect": coefs[n],
-             "level": float(np.exp(coefs[n]))}
+    counts = d.groupby("cal_q")["listing_id"].nunique()
+    rows = [{"quarter": n.replace("cal_q_", ""), "log_effect": coefs[n]}
             for n in names if n.startswith("cal_q_")]
-    return pd.DataFrame(rows).sort_values("quarter").reset_index(drop=True)
+    out = pd.DataFrame(rows).sort_values("quarter").reset_index(drop=True)
+    if out.empty:
+        return out
+    # Coefficients are relative to an arbitrary omitted quarter, which makes
+    # the raw levels uninterpretable. Rebase to the first quarter shown so the
+    # series reads as an index, and carry the catalog count -- early and very
+    # recent quarters rest on few panels and should not be over-read.
+    out["log_effect"] = out["log_effect"] - out["log_effect"].iloc[0]
+    out["index_level"] = np.exp(out["log_effect"])
+    out["n_catalogs"] = out["quarter"].map(counts).fillna(0).astype(int)
+    return out[out["n_catalogs"] >= 20].reset_index(drop=True)
 
 
 # --------------------------------------------------------------------

@@ -180,3 +180,79 @@ def test_walk_away_below_fair_and_fee_floor_binds():
     gap_big = 1 - walk_away_multiple(big) / big.fair_multiple_ltm
     assert walk_away_multiple(small) < small.fair_multiple_ltm
     assert gap_small > gap_big
+
+
+# --- regression guards for the projection blowup ---------------------
+
+def test_decay_rate_cannot_be_negative():
+    """A rising catalog must fit as flat, never as compounding growth.
+
+    This is the guard on the bug that produced fair multiples of 1e15: with
+    lambda unbounded below, a catalog whose observed window happened to rise
+    fitted as exponential growth and was then projected forty years forward.
+    """
+    rising = 1000 * np.exp(+0.30 * T)          # genuinely growing history
+    for form in ("exponential", "power", "exp_floor", "two_phase"):
+        f = fit_catalog(T, _noisy(rising, seed=5), form)
+        if f is None:
+            continue
+        rate_idx = {"exponential": [1], "power": [1], "exp_floor": [1],
+                    "two_phase": [1, 2]}[form]
+        for i in rate_idx:
+            assert f.params[i] >= -1e-9, f"{form} fitted a negative decay rate"
+
+
+def test_rising_catalog_values_finitely():
+    """The end-to-end consequence: no projection may diverge."""
+    f = fit_catalog(T, _noisy(1000 * np.exp(+0.30 * T), seed=6), "exponential")
+    v = value_catalog(listing_id=1, form="exponential", params=f.params,
+                      t_end=10.0, ltm=4000.0, term_family="perpetual")
+    assert np.isfinite(v.fair_multiple_ltm)
+    assert v.fair_multiple_ltm < 60.0
+
+
+def test_bear_never_exceeds_base():
+    """With negative lambda allowed, scaling it for the bear case made the
+    catalog grow faster and bear came out ABOVE base. It must not."""
+    for gen, seed in [(lambda t: 1000 * np.exp(-0.2 * t), 7),
+                      (lambda t: 1000 * np.exp(+0.2 * t), 8),
+                      (lambda t: np.full_like(t, 1000.0), 9)]:
+        f = fit_catalog(T, _noisy(gen(T), seed=seed), "exponential")
+        got = {s.name: value_catalog(listing_id=1, form="exponential",
+                                     params=f.params, t_end=10.0, ltm=4000.0,
+                                     scenario=s).fair_multiple_ltm
+               for s in SCENARIOS if s.name in ("base", "bear", "bull")}
+        assert got["bear"] <= got["base"] + 1e-9
+        assert got["bull"] >= got["base"] - 1e-9
+
+
+def test_annual_grain_converted_to_quarterly_rate():
+    """Annual rows carry a year of income; left as-is they overstate the run
+    rate fourfold and the NPV with it."""
+    n = 20
+    annual = pd.DataFrame({
+        "listing_id": 1,
+        "period_start": pd.date_range("2005-01-01", periods=n, freq="YS"),
+        "total": np.full(n, 4000.0), "domestic": 4000.0, "intl": 0.0,
+        "unreported": 0.0, "deal_date": pd.Timestamp("2025-01-01"),
+        "published_date": pd.Timestamp("2025-01-01"),
+        "first_earnings_date": pd.Timestamp("2005-01-01"),
+        "ltm": 4000.0, "three_years_average": 4000.0, "dollar_age": 12.0,
+        "track_count": 5, "term_family": "perpetual", "term_years": np.nan,
+        "kind": "direct_listing"})
+    q = to_quarterly(annual)
+    assert q["grain_source"].iloc[0] == "year"
+    assert q["total"].iloc[0] == pytest.approx(1000.0)
+
+
+def test_unknown_grain_panels_are_dropped():
+    two_points = pd.DataFrame({
+        "listing_id": 9, "period_start": pd.to_datetime(["2020-01-01", "2021-01-01"]),
+        "total": [100.0, 90.0], "domestic": [100.0, 90.0], "intl": 0.0,
+        "unreported": 0.0, "deal_date": pd.Timestamp("2022-01-01"),
+        "published_date": pd.Timestamp("2022-01-01"),
+        "first_earnings_date": pd.Timestamp("2020-01-01"),
+        "ltm": 90.0, "three_years_average": 95.0, "dollar_age": 2.0,
+        "track_count": 1, "term_family": "perpetual", "term_years": np.nan,
+        "kind": "direct_listing"})
+    assert to_quarterly(two_points).empty

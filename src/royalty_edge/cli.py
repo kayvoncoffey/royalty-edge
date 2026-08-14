@@ -342,6 +342,8 @@ def cmd_decay(args) -> int:
         drift = market_drift(q_trim)
         if not drift.empty:
             print(drift.tail(12).round(4).to_string(index=False))
+            print("(index rebased to the first quarter shown; quarters "
+                  "resting on fewer than 20 catalogs are suppressed)")
 
         meta = (q_trim.groupby("listing_id").first().reset_index()
                 [["listing_id", "ltm", "three_years_average", "dollar_age",
