@@ -1,0 +1,6 @@
+{
+  "detail_url_template": "https://auctions.royaltyexchange.com/orderbook/api/listings/{id}/?include[]=asset.*&include[]=deal.*&include[]=valuation_description.*&include[]=offers.*",
+  "max_page_size": 500,
+  "total_results": 2529,
+  "probed_at": "2026-08-13T04:46:38.122476+00:00"
+}

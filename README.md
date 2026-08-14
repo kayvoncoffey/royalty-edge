@@ -45,13 +45,46 @@ tests/                 regression tests pinned to fixtures
 ```bash
 pip install -e ".[dev]"
 pytest
-python -m royalty_edge.cli discover      # walk the index, fill fetch_queue
-python -m royalty_edge.cli harvest       # payloads to landing/, no DB lock
-python -m royalty_edge.cli load          # payloads -> L1 -> L2 rebuild
+
+# 1. export your session cookie -> secrets/cookie.txt (see secrets/README.md)
+
+# 2. resolve the detail endpoint and the real page_size cap. ~6 requests.
+python -m royalty_edge.cli probe --listing-id 6792
+
+# 3. walk the index. writes obs_index and queues detail fetches.
+python -m royalty_edge.cli discover
+
+# 4. drain the detail queue. resumable; Ctrl-C is safe.
+python -m royalty_edge.cli harvest
+
+# 5. rebuild the analytic layer and look at what you have
+python -m royalty_edge.cli rebuild
+python -m royalty_edge.cli report
 ```
 
-Harvest and load are separate because DuckDB takes an exclusive file lock; a
-long scrape holding it would block every notebook you have open.
+Harvest and rebuild are separate because DuckDB holds an exclusive file lock;
+a two-hour crawl holding it would block every notebook you have open.
+
+Useful flags: `--interval` (seconds between requests, default 3),
+`--limit` and `--max-runtime` on harvest for a bounded first pass,
+`--retry-failed` to re-attempt the failure queue after fixing a parser.
+
+### The detail endpoint is not yet confirmed
+
+We have a detail *payload* but never captured the URL that produced it.
+`probe` tries ranked candidates and accepts one only if it parses, returns the
+right listing id, and passes reconciliation. If all candidates fail, capture
+the URL from the network tab and add it to `DETAIL_URL_CANDIDATES` in
+`fetch/probe.py`. Everything downstream is already written and tested.
+
+### Resumability
+
+State lives in `fetch_queue` and is committed after every fetch. Interrupts,
+crashes and expired cookies all leave a resumable job. An auth failure aborts
+the run deliberately rather than marking the remaining queue failed -- a
+cookie that dies at request 900 would otherwise turn the remaining 1,600 into
+HTML shells recorded as permanent failures.
+
 
 ## Invariants the loader enforces
 

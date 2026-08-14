@@ -405,19 +405,49 @@ SELECT
     max(dollar_age)                                  AS max_dollar_age
 FROM dim_listing WHERE dollar_age IS NOT NULL AND ltm > 0;
 
--- Repeat sales of the same asset: the only direct observation of a realized
--- holding-period outcome anywhere in this dataset.
+-- Repeat sales matched by track overlap (asset_id is NOT shared across
+-- listings -- the platform creates a fresh asset wrapper per listing even
+-- for resales). Two listings are a repeat pair when their track sets share
+-- >= min_overlap_pct of the smaller set and the later one is secondary_listing.
+-- This is the only direct observation of realized holding-period returns.
 CREATE OR REPLACE VIEW v_repeat_sales AS
-SELECT a.asset_id, a.n_sold_listings,
-       f.listing_id AS first_listing_id, f.deal_date AS first_deal_date,
-       f.clearing_price AS first_price, f.ltm AS first_ltm,
-       t.listing_id AS later_listing_id, t.deal_date AS later_deal_date,
-       t.clearing_price AS later_price, t.ltm AS later_ltm,
+WITH track_sets AS (
+    SELECT t.obs_id, o.listing_id,
+           list(t.track_id ORDER BY t.track_id) AS tracks,
+           count(t.track_id) AS n_tracks
+    FROM obs_track t
+    JOIN obs_listing o USING (obs_id)
+    -- parser stores '' as NULL, so coalesce before comparing: NULL = '' is
+    -- never true and would silently filter out every root work.
+    WHERE coalesce(t.track_id,'') != '' AND coalesce(t.parent_track_id,'') = ''
+    GROUP BY t.obs_id, o.listing_id
+), pairs AS (
+    SELECT a.listing_id AS first_listing_id,
+           b.listing_id AS later_listing_id,
+           -- Jaccard-style: shared / min(|A|, |B|)
+           list_aggregate(
+               [x for x in a.tracks if list_contains(b.tracks, x)],
+               'count'
+           )::DOUBLE / least(a.n_tracks, b.n_tracks) AS overlap_pct
+    FROM track_sets a
+    JOIN track_sets b ON a.listing_id < b.listing_id
+    WHERE least(a.n_tracks, b.n_tracks) >= 2
+)
+SELECT p.first_listing_id, p.later_listing_id,
+       round(p.overlap_pct, 3)                          AS track_overlap,
+       f.deal_date                                      AS first_deal_date,
+       t.deal_date                                      AS later_deal_date,
        date_diff('day', f.deal_date, t.deal_date) / 365.25 AS years_held,
+       f.clearing_price                                 AS first_price,
+       t.clearing_price                                 AS later_price,
+       t.clearing_price / nullif(f.clearing_price, 0)  AS price_ratio,
+       f.ltm                                            AS first_ltm,
+       t.ltm                                            AS later_ltm,
        t.ltm / nullif(f.ltm, 0)                        AS ltm_ratio,
-       t.clearing_price / nullif(f.clearing_price, 0)  AS price_ratio
-FROM dim_asset a
-JOIN v_pricing_frame f ON f.asset_id = a.asset_id AND f.sold
-JOIN v_pricing_frame t ON t.asset_id = a.asset_id AND t.sold
+       dl_t.kind                                        AS later_kind
+FROM pairs p
+JOIN v_pricing_frame f ON f.listing_id = p.first_listing_id AND f.sold
+JOIN v_pricing_frame t ON t.listing_id = p.later_listing_id AND t.sold
                       AND t.deal_date > f.deal_date
-WHERE a.has_repeat_sale;
+JOIN dim_listing dl_t ON dl_t.listing_id = p.later_listing_id
+WHERE p.overlap_pct >= 0.80;

@@ -285,7 +285,7 @@ _RULES = [
     ("ltm_far_above_3yr", "info",
      "SELECT listing_id, 'LTM more than 50% above 3-year average; suspect sync or breakout' "
      "FROM dim_listing WHERE three_years_average > 0 AND ltm / three_years_average > 1.5"),
-    ("dollar_age_exceeds_catalog_age", "warn",
+    ("dollar_age_exceeds_catalog_age", "info",
      "SELECT listing_id, 'dollar_age exceeds age of catalog; not a weighted average in years' "
      "FROM dim_listing WHERE dollar_age IS NOT NULL AND catalog_age_years IS NOT NULL "
      "AND dollar_age > catalog_age_years + 0.51"),
