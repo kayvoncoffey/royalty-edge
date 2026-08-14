@@ -249,10 +249,41 @@ def walk_away_multiple(v: Valuation, *, all_access: bool = False) -> float:
     return max(p, 0.0) / v.ltm if v.ltm > 0 else np.nan
 
 
+def blend_forward(form: str, params, t_end: float,
+                  pooled_params, age: float, weight: float) -> tuple[float, float]:
+    """Combine a catalog's own forward parameters with the pooled curve's.
+
+    weight is the confidence in the catalog's own history -- n/(n+k) from the
+    shrinkage step. With two thirds of individual fits pinned at flat, a pure
+    per-catalog model is a constant and a pure pooled model ignores real
+    catalog-level information where it exists. Blending in the FORWARD
+    parameters rather than in the fitted coefficients means the two sources
+    are on the same scale and comparable regardless of functional form.
+    """
+    lam_i, s_i = forward_params(form, params, t_end)
+    if pooled_params is None:
+        return lam_i, s_i
+    lam_p, s_p = forward_params("exp_floor", pooled_params, max(age, 0.0))
+    w = float(np.clip(weight, 0.0, 1.0))
+    return w * lam_i + (1 - w) * lam_p, w * s_i + (1 - w) * s_p
+
+
 def value_all(best_fits: pd.DataFrame, meta: pd.DataFrame, *,
               rates: tuple[float, ...] = (0.08, 0.12, 0.18),
-              scenarios: list[Scenario] | None = None) -> pd.DataFrame:
-    """Value every catalog with a fitted curve, across rates and scenarios."""
+              scenarios: list[Scenario] | None = None,
+              pooled_params=None, decay_source: str = "blend",
+              k_prior: float = 12.0) -> pd.DataFrame:
+    """Value every catalog with a fitted curve, across rates and scenarios.
+
+    decay_source:
+      'fit'    -- each catalog's own curve. On these panels that means flat
+                  for most of the book and a fair multiple that is really an
+                  annuity constant.
+      'pooled' -- the cross-sectional age profile applied at each catalog's
+                  age. Ignores catalog-specific information but is estimated
+                  on 1,600+ panels instead of 25 noisy quarters.
+      'blend'  -- per-catalog weighted n/(n+k), pooled otherwise. Default.
+    """
     scenarios = scenarios or SCENARIOS
     dropped: list[dict] = []
     d = best_fits.merge(meta, on="listing_id", how="left", suffixes=("", "_m"))
@@ -267,12 +298,30 @@ def value_all(best_fits: pd.DataFrame, meta: pd.DataFrame, *,
         t_end = float(r.get("span_years") or 0.0)
         base = r.get("three_years_average")
         base = base if base and np.isfinite(base) and base > 0 else ltm
+        n_obs = float(r.get("n_obs") or 0.0)
+
+        if decay_source == "fit" or pooled_params is None:
+            eff_form, eff_params, eff_t = r["form"], params, t_end
+        elif decay_source == "pooled":
+            eff_form, eff_params, eff_t = "exp_floor", pooled_params, t_end
+        else:
+            w = n_obs / (n_obs + k_prior) if n_obs > 0 else 0.0
+            lam_b, s_b = blend_forward(r["form"], params, t_end,
+                                       pooled_params, t_end, w)
+            # re-express the blended pair as an exp_floor curve so the rest of
+            # the machinery is untouched
+            s_c = float(np.clip(s_b, 1e-6, 1 - 1e-6))
+            eff_form = "exp_floor"
+            eff_params = np.array([0.0, max(lam_b, 0.0),
+                                   float(np.log(s_c / (1 - s_c)))])
+            eff_t = 0.0
+
         for rate in rates:
             for sc in scenarios:
                 try:
                     v = value_catalog(
-                        listing_id=int(r["listing_id"]), form=r["form"],
-                        params=params, t_end=t_end, ltm=float(ltm),
+                        listing_id=int(r["listing_id"]), form=eff_form,
+                        params=eff_params, t_end=eff_t, ltm=float(ltm),
                         normalized_base=float(base),
                         term_family=r.get("term_family") or "perpetual",
                         term_years=r.get("term_years"), rate=rate, scenario=sc)
@@ -407,7 +456,9 @@ def implied_discount_rate(form, params, t_end: float, price: float, *,
         return np.nan
 
 
-def implied_rate_table(best_fits: pd.DataFrame, frame: pd.DataFrame) -> pd.DataFrame:
+def implied_rate_table(best_fits: pd.DataFrame, frame: pd.DataFrame, *,
+                       pooled_params=None, decay_source: str = "blend",
+                       k_prior: float = 12.0) -> pd.DataFrame:
     """Implied rate for every catalog with both a fitted curve and a price."""
     cols = [c for c in ["listing_id", "title", "kind", "term_family", "term_years",
                         "deal_date", "ltm", "dollar_age", "clearing_price",
@@ -425,8 +476,21 @@ def implied_rate_table(best_fits: pd.DataFrame, frame: pd.DataFrame) -> pd.DataF
         ltm_v = r.get("ltm")
         anchor = (float(ltm_v) / 4.0
                   if ltm_v and np.isfinite(ltm_v) and ltm_v > 0 else None)
+        t_end = float(r.get("span_years") or 0.0)
+        n_obs = float(r.get("n_obs") or 0.0)
+        if decay_source == "fit" or pooled_params is None:
+            ef, ep, et = r["form"], params, t_end
+        elif decay_source == "pooled":
+            ef, ep, et = "exp_floor", pooled_params, t_end
+        else:
+            w = n_obs / (n_obs + k_prior) if n_obs > 0 else 0.0
+            lam_b, s_b = blend_forward(r["form"], params, t_end,
+                                       pooled_params, t_end, w)
+            s_c = float(np.clip(s_b, 1e-6, 1 - 1e-6))
+            ef, ep, et = "exp_floor", np.array(
+                [0.0, max(lam_b, 0.0), float(np.log(s_c / (1 - s_c)))]), 0.0
         rate = implied_discount_rate(
-            r["form"], params, float(r.get("span_years") or 0.0), float(price),
+            ef, ep, et, float(price),
             term_family=r.get("term_family") or "perpetual",
             term_years=r.get("term_years"), anchor_level=anchor)
         rows.append({"listing_id": int(r["listing_id"]),

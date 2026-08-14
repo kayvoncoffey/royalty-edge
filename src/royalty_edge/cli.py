@@ -32,6 +32,7 @@ from .model.features import FrameSpec, load_frame, FUNDAMENTALS, SELLER_ASK, ANC
 from .model.pricing import (anchor_analysis, fit_ladder, ladder_table,
                             residual_screen, spike_check, temporal_holdout)
 from .model.decay import (decompose_composition, diagnose_reporting_lag, fit_all,
+                         fit_pooled_curve, pooled_curve_summary,
                          load_panels, market_drift, pooled_age_profile,
                          select_best, shrink_estimates, to_quarterly,
                          trim_partial_tail)
@@ -368,6 +369,19 @@ def cmd_decay(args) -> int:
             print("(index rebased to the first quarter shown; quarters "
                   "resting on fewer than 20 catalogs are suppressed)")
 
+        pooled_params = fit_pooled_curve(prof)
+        if pooled_params is not None:
+            print("\n=== pooled profile as a projectable curve ===")
+            summ_p = pooled_curve_summary(pooled_params)
+            for k, v in summ_p.items():
+                print(f"  {k}: {v:.4f}")
+            if summ_p.get("long_run_floor_share_of_peak", 1) < 0.01:
+                print("  WARNING: the fitted floor is at its lower bound, i.e. the")
+                print("  curve says income decays to zero. The profile is still")
+                print("  declining at its last observed age bin, so the fit has no")
+                print("  evidence of a plateau and extrapolates decline forever.")
+                print("  That is the most pessimistic defensible reading, not a fact.")
+
         meta = (q_trim.groupby("listing_id").first().reset_index()
                 [["listing_id", "ltm", "three_years_average", "dollar_age",
                   "track_count", "term_family", "term_years"]])
@@ -381,7 +395,10 @@ def cmd_decay(args) -> int:
                           "shrink_weight"]].describe().round(3).to_string())
 
         print("\n=== valuing every fitted catalog ===")
-        vals = value_all(best, meta, rates=(0.08, 0.12, 0.18))
+        print(f"\n=== valuing with decay_source={args.decay_source} ===")
+        vals = value_all(best, meta, rates=(0.08, 0.12, 0.18),
+                         pooled_params=pooled_params,
+                         decay_source=args.decay_source)
         if vals.empty:
             print("no valuations produced")
             return 1
@@ -405,10 +422,33 @@ def cmd_decay(args) -> int:
             print(f"\nmedian edge_pct across {len(cmp_)} valued lots: "
                   f"{cmp_['edge_pct'].median():.1%}")
 
+        if pooled_params is not None:
+            print("\n=== the two decay sources bracket the market ===")
+            rows = []
+            for src in ("fit", "blend", "pooled"):
+                v_src = value_all(best, meta, rates=(args.rate,),
+                                  pooled_params=pooled_params, decay_source=src)
+                b = v_src[v_src["scenario"] == "base"]
+                if b.empty:
+                    continue
+                rows.append({"decay_source": src, "n": len(b),
+                             "p25": b["fair_multiple_ltm"].quantile(.25),
+                             "median": b["fair_multiple_ltm"].median(),
+                             "p75": b["fair_multiple_ltm"].quantile(.75)})
+            if rows:
+                print(pd.DataFrame(rows).round(2).to_string(index=False))
+                mkt = frame.loc[frame["sold"] == True, "multiple_gross"].median()
+                print(f"market actually cleared at a median of {mkt:.2f}x")
+                print("'fit' assumes flat income for most of the book, 'pooled' assumes")
+                print("the cross-sectional decay applies to everything. The market")
+                print("sitting between them is the expected result; where it sits tells")
+                print("you which assumption bidders are closer to.")
+
         print("\n=== implied discount rate: what is the market actually paying? ===")
         print("(the rate at which each realized price is exactly justified by the")
         print(" model's own projection -- the buyer's implied IRR)")
-        irt = implied_rate_table(best, frame)
+        irt = implied_rate_table(best, frame, pooled_params=pooled_params,
+                                 decay_source=args.decay_source)
         summ = implied_rate_summary(irt)
         if not summ.empty:
             print(summ.to_string(index=False))
@@ -490,6 +530,9 @@ def main(argv=None) -> int:
     sp3.add_argument("--trim", type=int, default=None,
                      help="trailing quarters to drop; default auto-detect")
     sp3.add_argument("--rate", type=float, default=0.12, help="discount rate")
+    sp3.add_argument("--decay-source", default="blend",
+                     choices=("fit", "pooled", "blend"),
+                     help="per-catalog fit, pooled age profile, or blend")
     sp3.add_argument("--min-year", type=int, default=2020)
     sp3.add_argument("--top-n", type=int, default=15)
     sp3.add_argument("--out", default=None, help="write fits to parquet")

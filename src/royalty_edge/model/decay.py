@@ -636,3 +636,52 @@ def decompose_composition(con) -> pd.DataFrame:
     out["hhi_last"] = hhi[last_col]
     out["composition_shift"] = (out["top_share_change"].abs() > 0.20)
     return out.reset_index()
+
+
+# --------------------------------------------------------------------
+# The pooled profile as a decay model in its own right
+# --------------------------------------------------------------------
+
+def fit_pooled_curve(profile: pd.DataFrame) -> np.ndarray | None:
+    """Summarize the pooled age profile as a single exp_floor curve.
+
+    WHY THIS EXISTS. On real panels the per-catalog fits are hopeless: the
+    typical panel is ~25 noisy quarters with log-RMSE near 0.7, and once decay
+    is constrained non-negative the optimizer lands on FLAT for roughly two
+    thirds of catalogs. A flat projection is an annuity, so those catalogs all
+    receive the identical fair multiple -- the 40-year annuity factor -- and
+    the "model" reduces to a constant that varies only with term length.
+
+    The aggregate signal, by contrast, is strong and well behaved: pooled
+    across 1,600+ catalogs and purged of market-wide drift, income falls
+    monotonically through 24 age bins. Individual panels cannot identify a
+    decay rate; the cross-section identifies it clearly. Fitting a parametric
+    curve to the pooled profile turns that into something projectable, and
+    because it is expressed on the age axis it differentiates catalogs by the
+    one variable that is both observed and informative.
+
+    Returns exp_floor parameters, so everything downstream (forward_params,
+    scenarios, NPV) applies unchanged.
+    """
+    if profile is None or profile.empty or len(profile) < 6:
+        return None
+    a = profile["age_start"].to_numpy(float)
+    lvl = profile["level"].to_numpy(float)
+    ok = np.isfinite(a) & np.isfinite(lvl) & (lvl > 0)
+    if ok.sum() < 6:
+        return None
+    f = fit_catalog(a[ok], lvl[ok], "exp_floor", listing_id=-1, cv_holdout=0)
+    return None if f is None else f.params
+
+
+def pooled_curve_summary(params: np.ndarray) -> dict:
+    """Human-readable description of the pooled curve."""
+    if params is None:
+        return {}
+    lam = float(params[1])
+    frac = float(1.0 / (1.0 + np.exp(-params[2])))
+    return {
+        "annual_decay_rate": 1 - float(np.exp(-lam)),
+        "half_life_years": float(np.log(2) / lam) if lam > 1e-6 else np.inf,
+        "long_run_floor_share_of_peak": frac,
+    }
